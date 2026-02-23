@@ -118,9 +118,8 @@
                             <input type="hidden" name="service_code" :value="serviceCode" required>
                             <div x-show="serviceOpen" x-cloak class="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg">
                                 <template x-for="s in filteredServicesOther" :key="s.code">
-                                    <div @click="selectServiceOther(s)" class="px-3 py-2 cursor-pointer hover:bg-mint-50 dark:hover:bg-mint-900/20 text-slate-800 dark:text-slate-200 flex justify-between">
+                                    <div @click="selectServiceOther(s)" class="px-3 py-2 cursor-pointer hover:bg-mint-50 dark:hover:bg-mint-900/20 text-slate-800 dark:text-slate-200">
                                         <span x-text="s.name"></span>
-                                        <span x-text="formatPrice(s.price)" class="text-mint-600 dark:text-mint-400 text-sm"></span>
                                     </div>
                                 </template>
                                 <p x-show="filteredServicesOther.length === 0" class="px-3 py-2 text-slate-500 dark:text-slate-400 text-sm" x-text="(serviceSearch || '').trim() ? 'No match' : 'Type to search (e.g. WhatsApp, Telegram)'"></p>

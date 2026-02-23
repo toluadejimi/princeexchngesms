@@ -35,15 +35,17 @@ class MultiCountrySmsService implements SmsServerInterface
         $response = Http::asForm()->timeout(15)->post($url, $form);
 
         $duration = (microtime(true) - $start) * 1000;
-        ApiRequestLog::create([
-            'server_id' => $this->server->id,
-            'action' => $logAction,
-            'method' => 'POST',
-            'url' => $url,
-            'status_code' => $response->status(),
-            'response_body' => substr((string) $response->body(), 0, 2000),
-            'duration_ms' => round($duration, 2),
-        ]);
+        if (config('app.log_api_requests', false)) {
+            ApiRequestLog::create([
+                'server_id' => $this->server->id,
+                'action' => $logAction,
+                'method' => 'POST',
+                'url' => $url,
+                'status_code' => $response->status(),
+                'response_body' => substr((string) $response->body(), 0, 2000),
+                'duration_ms' => round($duration, 2),
+            ]);
+        }
 
         if (!$response->successful()) {
             throw new \RuntimeException('SMSPool API failed: HTTP ' . $response->status());

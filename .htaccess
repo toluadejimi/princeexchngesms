@@ -1,0 +1,43 @@
+# ============================================
+# Laravel root .htaccess (use when doc root is this folder on cPanel)
+# - Blocks access to .env and other sensitive files
+# - Sends all requests to /public so you don't need /public in the URL
+# ============================================
+
+# Block access to sensitive files (no one can read .env)
+<Files ".env">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</Files>
+<Files ".env.example">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</Files>
+<Files ".gitignore">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+</Files>
+
+# Optional: block entire /vendor and other dirs from web (if someone tries /vendor/...)
+RewriteEngine On
+RewriteRule ^\.env - [F,L]
+RewriteRule ^\.env\.example - [F,L]
+RewriteRule ^\.git - [F,L]
+RewriteRule ^vendor/ - [F,L]
+RewriteRule ^storage/ - [F,L]
+RewriteRule ^node_modules/ - [F,L]
+
+# Send everything else to the public folder (so you don't need /public in the URL)
+RewriteCond %{REQUEST_URI} !^/public/
+RewriteRule ^(.*)$ public/$1 [L]

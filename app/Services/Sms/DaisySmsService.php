@@ -44,15 +44,17 @@ class DaisySmsService implements SmsServerInterface
         $response = Http::timeout(15)->get($url);
         $duration = (microtime(true) - $start) * 1000;
 
-        ApiRequestLog::create([
-            'server_id' => $this->server->id,
-            'action' => $logAction,
-            'method' => 'GET',
-            'url' => $this->baseUrl . '/stubs/handler_api.php',
-            'status_code' => $response->status(),
-            'response_body' => substr((string) $response->body(), 0, 2000),
-            'duration_ms' => round($duration, 2),
-        ]);
+        if (config('app.log_api_requests', false)) {
+            ApiRequestLog::create([
+                'server_id' => $this->server->id,
+                'action' => $logAction,
+                'method' => 'GET',
+                'url' => $this->baseUrl . '/stubs/handler_api.php',
+                'status_code' => $response->status(),
+                'response_body' => substr((string) $response->body(), 0, 2000),
+                'duration_ms' => round($duration, 2),
+            ]);
+        }
 
         if (!$response->successful()) {
             throw new \RuntimeException('DaisySMS API request failed: HTTP ' . $response->status());

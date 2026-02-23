@@ -25,6 +25,9 @@
                     <x-nav-link :href="route('rentals.create.countries')" :active="request()->routeIs('rentals.create.countries')">
                         {{ __('Other Countries') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('support.index')" :active="request()->routeIs('support.*')">
+                        {{ __('Support') }}
+                    </x-nav-link>
                     @if(auth()->user()?->is_admin)
                     <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.*')">
                         {{ __('Admin') }}
@@ -100,6 +103,7 @@
                 <x-responsive-nav-link :href="route('fund-wallet.index')" :active="request()->routeIs('fund-wallet.*')">{{ __('Fund Wallet') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('rentals.create.usa')" :active="request()->routeIs('rentals.create.usa')">{{ __('USA Server') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('rentals.create.countries')" :active="request()->routeIs('rentals.create.countries')">{{ __('Other Countries') }}</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('support.index')" :active="request()->routeIs('support.*')">{{ __('Support') }}</x-responsive-nav-link>
                 @if(auth()->user()?->is_admin)
                 <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.*')">{{ __('Admin') }}</x-responsive-nav-link>
                 @endif

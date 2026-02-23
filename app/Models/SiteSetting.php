@@ -97,6 +97,12 @@ class SiteSetting extends Model
         return (float) static::get('naira_margin_amount', 0);
     }
 
+    /** Telegram link URL for floating icon (e.g. https://t.me/yourchannel). Empty to hide. */
+    public static function telegramUrl(): string
+    {
+        return (string) static::get('telegram_url', '');
+    }
+
     /**
      * Convert API USD price to customer display. Uses usdToNairaTotal when NGN.
      * Returns ['amount' => number, 'currency' => 'NGN'|'USD', 'symbol' => '₦'|'$'].

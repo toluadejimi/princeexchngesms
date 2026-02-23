@@ -64,13 +64,26 @@ class MultiCountrySmsService implements SmsServerInterface
         $cacheKey = 'smspool_services_' . $this->server->id;
         return Cache::remember($cacheKey, now()->addMinutes(15), function () {
             $data = $this->post('/service/retrieve_all', [], 'getServices');
-            $list = $data['data'] ?? $data['services'] ?? $data;
+            // SMSPool returns raw array: [{"ID":1,"name":"1688","favourite":0}, ...]
+            $list = null;
+            if (is_array($data)) {
+                if (isset($data['data']) && is_array($data['data'])) {
+                    $list = $data['data'];
+                } elseif (isset($data['services']) && is_array($data['services'])) {
+                    $list = $data['services'];
+                } elseif (array_keys($data) === range(0, count($data) - 1)) {
+                    $list = $data;
+                }
+            }
             if (!is_array($list)) {
                 return [];
             }
             $services = [];
             foreach ($list as $item) {
-                $id = $item['id'] ?? $item['service_id'] ?? $item['short_name'] ?? '';
+                if (!is_array($item)) {
+                    continue;
+                }
+                $id = $item['ID'] ?? $item['id'] ?? $item['service_id'] ?? $item['short_name'] ?? '';
                 $services[] = [
                     'code' => (string) $id,
                     'name' => $item['name'] ?? $item['short_name'] ?? $item['service'] ?? 'Service ' . $id,
@@ -97,7 +110,19 @@ class MultiCountrySmsService implements SmsServerInterface
                 ]);
                 return [];
             }
-            $list = $data['data'] ?? $data['countries'] ?? $data['result'] ?? $data;
+            // SMSPool returns raw array: [{"ID":1,"name":"United States","short_name":"US","cc":"1","region":"..."}, ...]
+            $list = null;
+            if (is_array($data)) {
+                if (isset($data['data']) && is_array($data['data'])) {
+                    $list = $data['data'];
+                } elseif (isset($data['countries']) && is_array($data['countries'])) {
+                    $list = $data['countries'];
+                } elseif (isset($data['result']) && is_array($data['result'])) {
+                    $list = $data['result'];
+                } elseif (array_keys($data) === range(0, count($data) - 1)) {
+                    $list = $data; // raw sequential array
+                }
+            }
             if (!is_array($list)) {
                 \Illuminate\Support\Facades\Log::warning('SMSPool getCountries: response is not a list', [
                     'server_id' => $this->server->id,
@@ -112,8 +137,8 @@ class MultiCountrySmsService implements SmsServerInterface
                 if (!is_array($item)) {
                     continue;
                 }
-                $id = $item['id'] ?? $item['country_id'] ?? $item['countryId'] ?? '';
-                $code = strtoupper((string) ($item['iso'] ?? $item['iso2'] ?? $item['code'] ?? $item['country_code'] ?? (string) $id));
+                $id = $item['ID'] ?? $item['id'] ?? $item['country_id'] ?? $item['countryId'] ?? '';
+                $code = strtoupper((string) ($item['short_name'] ?? $item['iso'] ?? $item['iso2'] ?? $item['code'] ?? $item['country_code'] ?? (string) $id));
                 $name = $item['name'] ?? $item['country'] ?? $item['country_name'] ?? 'Country ' . $code;
                 if ($code === '' || $code === '0') {
                     continue;
@@ -139,14 +164,83 @@ class MultiCountrySmsService implements SmsServerInterface
         return $result;
     }
 
-    public function orderNumber(string $serviceCode, string $countryCode, ?float $maxPrice = null, array $options = []): array
+    /**
+     * Get available pools. SMSPool returns [{"ID":3,"name":"Charlie"}, ...].
+     */
+    public function getPools(): array
+    {
+        $cacheKey = 'smspool_pools_' . $this->server->id;
+        return Cache::remember($cacheKey, now()->addHour(), function () {
+            try {
+                $data = $this->post('/pool/retrieve_all', [], 'getPools');
+            } catch (\Throwable $e) {
+                return [];
+            }
+            $list = null;
+            if (is_array($data)) {
+                if (isset($data['data']) && is_array($data['data'])) {
+                    $list = $data['data'];
+                } elseif (isset($data['pools']) && is_array($data['pools'])) {
+                    $list = $data['pools'];
+                } elseif (array_keys($data) === range(0, count($data) - 1)) {
+                    $list = $data;
+                }
+            }
+            if (!is_array($list)) {
+                return [];
+            }
+            $pools = [];
+            foreach ($list as $item) {
+                if (!is_array($item)) {
+                    continue;
+                }
+                $id = $item['ID'] ?? $item['id'] ?? '';
+                $name = $item['name'] ?? 'Pool ' . $id;
+                if ($id !== '' && $id !== null) {
+                    $pools[] = ['id' => (string) $id, 'name' => (string) $name];
+                }
+            }
+            return $pools;
+        });
+    }
+
+    /**
+     * Get price for country + service + optional pool. SMSPool POST /request/price.
+     * Params: country = country_id, service = service_id, pool = pool_id (optional).
+     * Returns ['price' => float, 'success_rate' => int].
+     */
+    public function getPrice(int $countryId, int $serviceId, ?int $poolId = null): array
     {
         $form = [
-            'country' => $countryCode,
-            'service' => $serviceCode,
+            'country' => $countryId,
+            'service' => $serviceId,
+        ];
+        if ($poolId !== null && $poolId > 0) {
+            $form['pool'] = $poolId;
+        }
+        $data = $this->post('/request/price', $form, 'getPrice');
+        $price = (float) ($data['price'] ?? 0);
+        $successRate = isset($data['success_rate']) ? (int) $data['success_rate'] : 0;
+        return ['price' => $price, 'success_rate' => $successRate];
+    }
+
+    public function orderNumber(string $serviceCode, string $countryCode, ?float $maxPrice = null, array $options = []): array
+    {
+        // SMSPool /purchase/sms expects numeric country and service IDs (same as /request/price)
+        $countryParam = isset($options['country_id']) && $options['country_id'] !== ''
+            ? (int) $options['country_id']
+            : $countryCode;
+        $serviceParam = is_numeric($serviceCode) ? (int) $serviceCode : $serviceCode;
+
+        $form = [
+            'country' => $countryParam,
+            'service' => $serviceParam,
         ];
         if ($maxPrice !== null && $maxPrice > 0) {
             $form['max_price'] = $maxPrice;
+        }
+        if (!empty($options['pool_id'])) {
+            $form['pool'] = $options['pool_id'];
         }
         $data = $this->post('/purchase/sms', $form, 'order');
 
@@ -190,5 +284,96 @@ class MultiCountrySmsService implements SmsServerInterface
     {
         $data = $this->post('/sms/cancel', ['orderid' => $orderId], 'cancel');
         return (int) ($data['success'] ?? 0) === 1;
+    }
+
+    // ---------- SMS management (SMSPool Postman collection) ----------
+
+    /** Active orders – POST /request/active */
+    public function getActiveOrders(): array
+    {
+        $data = $this->post('/request/active', [], 'activeOrders');
+        $list = $data['orders'] ?? $data['data'] ?? $data['result'] ?? $data;
+        return is_array($list) ? $list : [];
+    }
+
+    /** Cancel all SMS – POST /sms/cancel_all */
+    public function cancelAll(): array
+    {
+        return $this->post('/sms/cancel_all', [], 'cancelAll');
+    }
+
+    /** Clear SMS cache – POST /sms/clear_cache */
+    public function clearSmsCache(): array
+    {
+        return $this->post('/sms/clear_cache', [], 'clearCache');
+    }
+
+    /** Activate SMS – POST /sms/activate. Params: orderid */
+    public function activateSms(string $orderId): array
+    {
+        return $this->post('/sms/activate', ['orderid' => $orderId], 'activate');
+    }
+
+    /** Reactivate SMS – POST /sms/reactivate. Params: orderid */
+    public function reactivateSms(string $orderId): array
+    {
+        return $this->post('/sms/reactivate', ['orderid' => $orderId], 'reactivate');
+    }
+
+    /** Archive all orders – POST /request/archive */
+    public function archiveAll(): array
+    {
+        return $this->post('/request/archive', [], 'archiveAll');
+    }
+
+    /** Check resend – POST /sms/check_resend. Params: orderid */
+    public function checkResend(string $orderId): array
+    {
+        return $this->post('/sms/check_resend', ['orderid' => $orderId], 'checkResend');
+    }
+
+    /** Resend – POST /sms/resend. Params: orderid */
+    public function resendSms(string $orderId): array
+    {
+        return $this->post('/sms/resend', ['orderid' => $orderId], 'resend');
+    }
+
+    /** One-time SMS stock – POST /sms/stock. Optional: country, service */
+    public function getSmsStock(?int $countryId = null, ?int $serviceId = null): array
+    {
+        $form = [];
+        if ($countryId !== null) {
+            $form['country'] = $countryId;
+        }
+        if ($serviceId !== null) {
+            $form['service'] = $serviceId;
+        }
+        return $this->post('/sms/stock', $form, 'stock');
+    }
+
+    /** One-time stock for all services – POST /sms/all_stock */
+    public function getAllSmsStock(): array
+    {
+        return $this->post('/sms/all_stock', [], 'allStock');
+    }
+
+    /** Order history – POST /request/history */
+    public function getOrderHistory(): array
+    {
+        $data = $this->post('/request/history', [], 'history');
+        $list = $data['orders'] ?? $data['data'] ?? $data['result'] ?? $data;
+        return is_array($list) ? $list : [];
+    }
+
+    /** Request available areacodes – POST /request/areacodes. Optional: country */
+    public function getAreacodes(?int $countryId = null): array
+    {
+        $form = [];
+        if ($countryId !== null) {
+            $form['country'] = $countryId;
+        }
+        $data = $this->post('/request/areacodes', $form, 'areacodes');
+        $list = $data['areacodes'] ?? $data['data'] ?? $data['result'] ?? $data;
+        return is_array($list) ? $list : [];
     }
 }

@@ -85,8 +85,8 @@
                     <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
                         @forelse($rentals as $r)
                             <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30">
-                                <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{{ \App\Helpers\DisplayHelper::countryCodeToName($r->country_code ?? '') }}</td>
-                                <td class="px-4 py-3 text-sm">{{ \App\Helpers\DisplayHelper::serviceCodeToName($r->service_code ?? '') }}</td>
+                                <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{{ $r->getCountryDisplayName() }}</td>
+                                <td class="px-4 py-3 text-sm">{{ $r->getServiceDisplayName() }}</td>
                                 <td class="px-4 py-3 text-sm font-mono">
                                     @if($r->phone_number)
                                         <button type="button" onclick="copyToClipboard('{{ preg_replace('/\D/', '', $r->phone_number) }}', this)" class="inline-flex items-center gap-1.5 text-left hover:bg-slate-100 dark:hover:bg-slate-800 rounded px-1 -mx-1 transition" title="Copy number">
@@ -149,18 +149,30 @@
                                 </td>
                                 <td class="px-4 py-3 text-right">
                                     @if($r->isActive())
+                                        @if($r->server && $r->server->isMultiCountry())
+                                            <form action="{{ route('rentals.resend', $r->id) }}" method="POST" class="inline">
+                                                @csrf
+                                                <button type="submit" class="text-slate-600 dark:text-slate-400 text-sm hover:underline">Resend</button>
+                                            </form>
+                                            <span class="text-slate-300 dark:text-slate-600">|</span>
+                                            <form action="{{ route('rentals.activate', $r->id) }}" method="POST" class="inline">
+                                                @csrf
+                                                <button type="submit" class="text-blue-600 dark:text-blue-400 text-sm hover:underline">Activate</button>
+                                            </form>
+                                            <span class="text-slate-300 dark:text-slate-600">|</span>
+                                            <form action="{{ route('rentals.reactivate', $r->id) }}" method="POST" class="inline">
+                                                @csrf
+                                                <button type="submit" class="text-amber-600 dark:text-amber-400 text-sm hover:underline">Reactivate</button>
+                                            </form>
+                                            <span class="text-slate-300 dark:text-slate-600">|</span>
+                                        @endif
                                         <form action="{{ route('rentals.cancel', $r->id) }}" method="POST" class="inline" onsubmit="return confirm('Cancel and refund?')">
                                             @csrf
                                             <button type="submit" class="text-red-600 dark:text-red-400 text-sm hover:underline">Cancel</button>
                                         </form>
                                     @endif
-                                    @if($r->phone_number && in_array($r->status, ['completed', 'cancelled', 'expired']))
-                                        @php
-                                            $reuseUrl = $r->server && $r->server->isUsaOnly()
-                                                ? route('rentals.create.usa', ['number' => preg_replace('/\D/', '', $r->phone_number)])
-                                                : route('rentals.create.countries', ['number' => preg_replace('/\D/', '', $r->phone_number)]);
-                                        @endphp
-                                        <a href="{{ $reuseUrl }}" class="text-mint-600 dark:text-mint-400 text-sm hover:underline ml-2">Reuse number</a>
+                                    @if($r->phone_number && in_array($r->status, ['completed', 'cancelled', 'expired']) && $r->server && $r->server->isUsaOnly())
+                                        <a href="{{ route('rentals.create.usa', ['number' => preg_replace('/\D/', '', $r->phone_number)]) }}" class="text-mint-600 dark:text-mint-400 text-sm hover:underline ml-2">Reuse number</a>
                                     @endif
                                 </td>
                             </tr>

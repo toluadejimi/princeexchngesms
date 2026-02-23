@@ -16,6 +16,8 @@
             'nairaMarginAmount' => (float) ($nairaMarginAmount ?? 0),
             'servicesUrl' => route('rentals.services'),
             'countriesUrl' => route('rentals.countries'),
+            'poolsUrl' => route('rentals.pools'),
+            'priceUrl' => route('rentals.price'),
             'storeUrl' => route('rentals.store'),
             'csrf' => csrf_token(),
         ])) }}"
@@ -29,13 +31,18 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Country</label>
                         <p x-show="countriesLoading" class="text-sm text-slate-500 dark:text-slate-400 mb-1">Loading countries...</p>
-                        <select x-model="countryCode" @change="loadServices" class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 shadow-sm focus:border-mint-500 focus:ring-mint-500"
-                                :disabled="countriesLoading" required>
-                            <option value="">Select country</option>
-                            <template x-for="c in countries" :key="c.code">
-                                <option :value="c.code" x-text="c.name"></option>
-                            </template>
-                        </select>
+                        <div x-show="!countriesLoading" class="relative" @click.away="countryOpen = false">
+                            <input type="text" x-model="countrySearch" @focus="countryOpen = true" placeholder="Search countries..."
+                                class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 shadow-sm focus:border-mint-500 focus:ring-mint-500"
+                                autocomplete="off">
+                            <input type="hidden" name="country_code" :value="countryCode" required>
+                            <div x-show="countryOpen" x-cloak class="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg">
+                                <template x-for="c in filteredCountries" :key="c.code">
+                                    <div @click="selectCountry(c)" class="px-3 py-2 cursor-pointer hover:bg-mint-50 dark:hover:bg-mint-900/20 text-slate-800 dark:text-slate-200" x-text="c.name"></div>
+                                </template>
+                                <p x-show="filteredCountries.length === 0" class="px-3 py-2 text-slate-500 dark:text-slate-400 text-sm">No match</p>
+                            </div>
+                        </div>
                         <p x-show="!countriesLoading && countries.length === 0" class="text-sm text-amber-600 dark:text-amber-400 mt-1">No countries available. Please try again later.</p>
                     </div>
                     @endif
@@ -97,18 +104,58 @@
                         </div>
                     </div>
                     @else
-                    {{-- Other countries: simple service dropdown --}}
+                    {{-- Other countries: searchable service dropdown + pool --}}
                     <p x-show="number" class="text-sm text-mint-600 dark:text-mint-400">
                         Reusing number: <span class="font-mono" x-text="number"></span>
                     </p>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Service</label>
-                        <select x-model="serviceCode" @change="onServiceSelect" :disabled="!serviceCodeReady" class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 shadow-sm focus:border-mint-500 focus:ring-mint-500" required>
-                            <option value="">Select service</option>
-                            <template x-for="s in services" :key="s.code">
-                                <option :value="s.code" :data-price="s.price" x-text="s.name + ' — ' + formatPrice(s.price)"></option>
-                            </template>
+                        <p x-show="!serviceCodeReady" class="text-sm text-slate-500 dark:text-slate-400 mb-1">Loading services...</p>
+                        <div x-show="serviceCodeReady" class="relative" @click.away="serviceOpen = false">
+                            <input type="text" x-model="serviceSearch" @focus="serviceOpen = true" placeholder="Search services..."
+                                class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 shadow-sm focus:border-mint-500 focus:ring-mint-500"
+                                autocomplete="off">
+                            <input type="hidden" name="service_code" :value="serviceCode" required>
+                            <div x-show="serviceOpen" x-cloak class="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg">
+                                <template x-for="s in filteredServicesOther" :key="s.code">
+                                    <div @click="selectServiceOther(s)" class="px-3 py-2 cursor-pointer hover:bg-mint-50 dark:hover:bg-mint-900/20 text-slate-800 dark:text-slate-200 flex justify-between">
+                                        <span x-text="s.name"></span>
+                                        <span x-text="formatPrice(s.price)" class="text-mint-600 dark:text-mint-400 text-sm"></span>
+                                    </div>
+                                </template>
+                                <p x-show="filteredServicesOther.length === 0" class="px-3 py-2 text-slate-500 dark:text-slate-400 text-sm" x-text="(serviceSearch || '').trim() ? 'No match' : 'Type to search (e.g. WhatsApp, Telegram)'"></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pool (optional)</label>
+                        <p x-show="poolsLoading" class="text-sm text-slate-500 dark:text-slate-400 mb-1">Loading pools...</p>
+                        <select x-show="!poolsLoading" x-ref="poolSelect" x-model="poolId" @change="loadPrice()" class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 shadow-sm focus:border-mint-500 focus:ring-mint-500">
+                            <option value="">No preference (any pool)</option>
                         </select>
+                    </div>
+                    {{-- Live price & success rate (Other Countries) --}}
+                    <div x-show="showCountry && (priceLoading || priceNgn > 0 || priceUsd > 0 || successRate > 0)" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-4">
+                        <p x-show="priceLoading" class="text-sm text-slate-500 dark:text-slate-400">Checking price...</p>
+                        <div x-show="!priceLoading && (priceNgn > 0 || priceUsd > 0 || successRate > 0)" class="space-y-3">
+                            <div class="flex items-center justify-between gap-4">
+                                <span class="text-sm font-medium text-slate-600 dark:text-slate-400">Estimated price</span>
+                                <span class="text-xl font-semibold text-mint-600 dark:text-mint-400" x-text="priceDisplay === 'NGN' && priceNgn > 0 ? ('₦' + priceNgn.toLocaleString()) : ('$' + (priceUsd || 0).toFixed(2))"></span>
+                            </div>
+                            <div class="flex items-center justify-between gap-4">
+                                <span class="text-sm font-medium text-slate-600 dark:text-slate-400">Success rate</span>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-24 h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden" role="progressbar" :aria-valuenow="successRate" aria-valuemin="0" aria-valuemax="100">
+                                        <div class="h-full rounded-full transition-all duration-300"
+                                            :class="successRate >= 80 ? 'bg-emerald-500' : successRate >= 50 ? 'bg-amber-500' : 'bg-red-500'"
+                                            :style="'width:' + Math.min(100, successRate) + '%'"></div>
+                                    </div>
+                                    <span class="text-sm font-semibold tabular-nums min-w-[3ch]"
+                                        :class="successRate >= 80 ? 'text-emerald-600 dark:text-emerald-400' : successRate >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'"
+                                        x-text="successRate + '%'"></span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     @endif
 
@@ -137,9 +184,20 @@
                 serviceSearch: '',
                 services: [],
                 countries: [],
+                countrySearch: '',
+                countryOpen: false,
                 showCountry: config.showCountry,
                 isUsa: config.isUsa || false,
                 countriesLoading: false,
+                serviceOpen: false,
+                pools: [],
+                poolsLoading: false,
+                poolId: '',
+                priceUrl: config.priceUrl,
+                priceLoading: false,
+                priceNgn: 0,
+                priceUsd: 0,
+                successRate: 0,
                 priceDisplay: config.priceDisplay || 'USD',
                 usdToNgnRate: config.usdToNgnRate || 0,
                 nairaMarginPercent: config.nairaMarginPercent || 0,
@@ -159,7 +217,24 @@
                 servicesUrl: config.servicesUrl,
                 countriesUrl: config.countriesUrl,
                 storeUrl: config.storeUrl,
+                poolsUrl: config.poolsUrl,
                 csrf: config.csrf,
+                get filteredCountries() {
+                    if (!this.countries || this.countries.length === 0) return [];
+                    var q = (this.countrySearch || '').toLowerCase().trim();
+                    if (!q) return this.countries;
+                    return this.countries.filter(function(c) {
+                        return (c.name && c.name.toLowerCase().indexOf(q) !== -1) || (c.code && c.code.toLowerCase().indexOf(q) !== -1);
+                    });
+                },
+                get filteredServicesOther() {
+                    if (!this.services || this.services.length === 0) return [];
+                    var q = (this.serviceSearch || '').toLowerCase().trim();
+                    if (!q) return [];
+                    return this.services.filter(function(s) {
+                        return (s.name && s.name.toLowerCase().indexOf(q) !== -1) || (s.code && String(s.code).toLowerCase().indexOf(q) !== -1);
+                    }).slice(0, 150);
+                },
                 get filteredServices() {
                     if (!this.services || this.services.length === 0) return [];
                     const q = (this.serviceSearch || '').toLowerCase().trim();
@@ -183,8 +258,55 @@
                         this.number = reuseNumber.replace(/\D/g, '');
                         this.showOptions = true;
                     }
-                    if (this.showCountry) this.loadCountries();
+                    if (this.showCountry) { this.loadCountries(); this.loadPools(); }
                     else { this.countryCode = 'US'; this.loadServices(); }
+                },
+                selectCountry(c) {
+                    this.countryCode = c.code;
+                    this.countrySearch = c.name || c.code;
+                    this.countryOpen = false;
+                    this.loadServices();
+                    this.loadPrice();
+                },
+                selectServiceOther(s) {
+                    this.serviceCode = s.code;
+                    this.serviceSearch = s.name || s.code;
+                    this.serviceOpen = false;
+                    this.loadPrice();
+                },
+                async loadPrice() {
+                    if (!this.showCountry || !this.countryCode || !this.serviceCode) {
+                        this.priceNgn = 0;
+                        this.priceUsd = 0;
+                        this.successRate = 0;
+                        return;
+                    }
+                    var country = this.countries.find(function(c) { return c.code === this.countryCode; }.bind(this));
+                    var countryId = country && (country.provider_id || country.id) ? country.provider_id || country.id : null;
+                    if (!countryId) return;
+                    this.priceLoading = true;
+                    this.priceNgn = 0;
+                    this.priceUsd = 0;
+                    this.successRate = 0;
+                    try {
+                        var params = new URLSearchParams({
+                            server_id: this.serverId,
+                            country_id: countryId,
+                            service_code: this.serviceCode
+                        });
+                        if (this.poolId) params.set('pool_id', this.poolId);
+                        var r = await fetch(this.priceUrl + '?' + params.toString(), { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } });
+                        var d = await r.json();
+                        this.priceUsd = parseFloat(d.price_usd) || 0;
+                        this.priceNgn = parseInt(d.price_ngn, 10) || 0;
+                        this.successRate = parseInt(d.success_rate, 10) || 0;
+                    } catch (e) {
+                        this.priceNgn = 0;
+                        this.priceUsd = 0;
+                        this.successRate = 0;
+                    } finally {
+                        this.priceLoading = false;
+                    }
                 },
                 applySearch() {
                     this.serviceSearch = this.serviceSearch.trim();
@@ -202,9 +324,16 @@
                             headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
                         });
                         const d = await r.json();
-                        this.countries = Array.isArray(d.countries) ? d.countries : [];
-                        if (this.countries.length) this.countryCode = this.countries[0].code;
-                        this.loadServices();
+                        const raw = d && (d.countries ?? d.data?.countries);
+                        const list = Array.isArray(raw) ? raw : [];
+                        this.countries = list.map(function (c) {
+                            return {
+                                code: (c && (c.code ?? c.short_name ?? c.iso ?? c.iso2)) || '',
+                                name: (c && (c.name ?? c.country ?? c.country_name)) || 'Unknown',
+                                provider_id: (c && (c.provider_id ?? c.id ?? c.ID)) != null ? String(c.provider_id ?? c.id ?? c.ID) : ''
+                            };
+                        }).filter(function (c) { return c.code !== ''; });
+                        // No default country — user must choose
                     } catch (e) {
                         this.countries = [];
                     } finally {
@@ -217,6 +346,28 @@
                     const d = await r.json();
                     this.services = d.services || [];
                     this.serviceCodeReady = true;
+                    if (this.showCountry && this.countryCode && this.serviceCode) this.loadPrice();
+                },
+                async loadPools() {
+                    this.poolsLoading = true;
+                    this.pools = [];
+                    try {
+                        var r = await fetch(this.poolsUrl + '?server_id=' + this.serverId, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } });
+                        var d = await r.json();
+                        this.pools = Array.isArray(d.pools) ? d.pools : [];
+                        var self = this;
+                        this.$nextTick(function() {
+                            var sel = self.$refs.poolSelect;
+                            if (sel) {
+                                while (sel.options.length > 1) sel.remove(1);
+                                self.pools.forEach(function(p) { sel.add(new Option(p.name, p.id)); });
+                            }
+                        });
+                    } catch (e) {
+                        this.pools = [];
+                    } finally {
+                        this.poolsLoading = false;
+                    }
                 },
                 getCarriersParam() {
                     const v = [];
@@ -233,7 +384,13 @@
                         form.append('_token', this.csrf);
                         form.append('server_id', this.serverId);
                         form.append('service_code', this.serviceCode);
-                        if (this.showCountry) form.append('country_code', this.countryCode);
+                        if (this.showCountry) {
+                            form.append('country_code', this.countryCode);
+                            const country = this.countries.find(c => c.code === this.countryCode);
+                            const providerCountryId = country && (country.provider_id ?? country.id ?? country.ID) != null ? String(country.provider_id ?? country.id ?? country.ID) : '';
+                            if (providerCountryId) form.append('country_id', providerCountryId);
+                        }
+                        if (this.showCountry && this.poolId) form.append('pool_id', this.poolId);
                         if (this.isUsa && this.areas) form.append('areas', this.areas.replace(/\s/g,''));
                         if (this.isUsa && this.getCarriersParam()) form.append('carriers', this.getCarriersParam());
                         if (this.number) form.append('number', this.number.replace(/\D/g,''));

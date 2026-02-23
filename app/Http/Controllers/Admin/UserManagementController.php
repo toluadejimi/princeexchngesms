@@ -40,7 +40,7 @@ class UserManagementController extends Controller
             ->whereNotNull('receipt_path')
             ->orderBy('created_at', 'desc')
             ->get();
-        $rentals = $user->rentals()->with('server:id,name')->latest()->paginate(15);
+        $rentals = $user->rentals()->with('server:id,name,type')->latest()->paginate(15);
 
         return view('admin.users.show', [
             'user' => $user,

@@ -2,8 +2,8 @@
 <div class="p-4 bg-white dark:bg-slate-900/50 first:rounded-t-2xl">
     <div class="flex items-start justify-between gap-3 mb-3">
         <div class="min-w-0">
-            <p class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{{ \App\Helpers\DisplayHelper::countryCodeToName($r->country_code ?? '') }}</p>
-            <p class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ \App\Helpers\DisplayHelper::serviceCodeToName($r->service_code ?? '') }}</p>
+            <p class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{{ $r->getCountryDisplayName() }}</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ $r->getServiceDisplayName() }}</p>
         </div>
         <div class="flex flex-col items-end gap-1 shrink-0">
             <span class="text-sm font-medium text-mint-600 dark:text-mint-400">{{ \App\Models\SiteSetting::formatWalletAmount((float) $r->cost) }}</span>
@@ -65,18 +65,27 @@
     </div>
     <div class="flex flex-wrap gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
         @if($r->isActive())
+            @if($r->server && $r->server->isMultiCountry())
+                <form action="{{ route('rentals.resend', $r->id) }}" method="POST" class="inline">
+                    @csrf
+                    <button type="submit" class="min-h-[44px] px-4 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-[0.98]">Resend</button>
+                </form>
+                <form action="{{ route('rentals.activate', $r->id) }}" method="POST" class="inline">
+                    @csrf
+                    <button type="submit" class="min-h-[44px] px-4 py-2 rounded-xl text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition active:scale-[0.98]">Activate</button>
+                </form>
+                <form action="{{ route('rentals.reactivate', $r->id) }}" method="POST" class="inline">
+                    @csrf
+                    <button type="submit" class="min-h-[44px] px-4 py-2 rounded-xl text-sm font-medium text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition active:scale-[0.98]">Reactivate</button>
+                </form>
+            @endif
             <form action="{{ route('rentals.cancel', $r->id) }}" method="POST" class="inline" onsubmit="return confirm('Cancel and refund?')">
                 @csrf
                 <button type="submit" class="min-h-[44px] px-4 py-2 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition active:scale-[0.98]">Cancel</button>
             </form>
         @endif
-        @if($r->phone_number && in_array($r->status, ['completed', 'cancelled', 'expired']))
-            @php
-                $reuseUrl = $r->server && $r->server->isUsaOnly()
-                    ? route('rentals.create.usa', ['number' => preg_replace('/\D/', '', $r->phone_number)])
-                    : route('rentals.create.countries', ['number' => preg_replace('/\D/', '', $r->phone_number)]);
-            @endphp
-            <a href="{{ $reuseUrl }}" class="inline-flex items-center min-h-[44px] px-4 py-2 rounded-xl text-sm font-medium text-mint-600 dark:text-mint-400 hover:bg-mint-50 dark:hover:bg-mint-900/20 transition active:scale-[0.98]">Reuse number</a>
+        @if($r->phone_number && in_array($r->status, ['completed', 'cancelled', 'expired']) && $r->server && $r->server->isUsaOnly())
+            <a href="{{ route('rentals.create.usa', ['number' => preg_replace('/\D/', '', $r->phone_number)]) }}" class="inline-flex items-center min-h-[44px] px-4 py-2 rounded-xl text-sm font-medium text-mint-600 dark:text-mint-400 hover:bg-mint-50 dark:hover:bg-mint-900/20 transition active:scale-[0.98]">Reuse number</a>
         @endif
     </div>
 </div>

@@ -75,4 +75,60 @@ class Rental extends Model
     {
         return in_array($this->status, [self::STATUS_PENDING, self::STATUS_ACTIVE], true);
     }
+
+    /**
+     * Display name for the service: for multi-country (SMSPool) resolves from provider list by service_code (ID).
+     */
+    public function getServiceDisplayName(): string
+    {
+        $code = $this->service_code ?? '';
+        if ($code === '') {
+            return '—';
+        }
+        if ($this->server && $this->server->isMultiCountry()) {
+            try {
+                $client = \App\Services\Sms\SmsServerFactory::make($this->server);
+                if (method_exists($client, 'getServices')) {
+                    $services = $client->getServices($this->country_code);
+                    foreach ($services as $s) {
+                        $c = $s['code'] ?? $s['id'] ?? null;
+                        if ((string) $c === (string) $code) {
+                            return $s['name'] ?? ucfirst((string) $code);
+                        }
+                    }
+                }
+            } catch (\Throwable) {
+                // fall through to default
+            }
+        }
+        return \App\Helpers\DisplayHelper::serviceCodeToName($code);
+    }
+
+    /**
+     * Display name for the country: for multi-country (SMSPool) resolves from provider list by country_code.
+     */
+    public function getCountryDisplayName(): string
+    {
+        $code = strtoupper((string) ($this->country_code ?? ''));
+        if ($code === '') {
+            return '—';
+        }
+        if ($this->server && $this->server->isMultiCountry()) {
+            try {
+                $client = \App\Services\Sms\SmsServerFactory::make($this->server);
+                if (method_exists($client, 'getCountries')) {
+                    $countries = $client->getCountries();
+                    foreach ($countries as $c) {
+                        $itemCode = strtoupper((string) ($c['code'] ?? ''));
+                        if ($itemCode === $code) {
+                            return $c['name'] ?? \App\Helpers\DisplayHelper::countryCodeToName($code);
+                        }
+                    }
+                }
+            } catch (\Throwable) {
+                // fall through to default
+            }
+        }
+        return \App\Helpers\DisplayHelper::countryCodeToName($code);
+    }
 }

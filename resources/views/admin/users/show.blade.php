@@ -140,8 +140,8 @@
                     <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
                         @forelse($rentals as $r)
                             <tr>
-                                <td class="px-4 py-2 text-sm">{{ \App\Helpers\DisplayHelper::countryCodeToName($r->country_code ?? '') }}</td>
-                                <td class="px-4 py-2 text-sm">{{ \App\Helpers\DisplayHelper::serviceCodeToName($r->service_code ?? '') }}</td>
+                                <td class="px-4 py-2 text-sm">{{ $r->getCountryDisplayName() }}</td>
+                                <td class="px-4 py-2 text-sm">{{ $r->getServiceDisplayName() }}</td>
                                 <td class="px-4 py-2 text-sm font-mono">{{ \App\Helpers\DisplayHelper::formatPhoneNumber($r->phone_number) }}</td>
                                 <td class="px-4 py-2">
                                     <span class="inline-flex px-2 py-0.5 rounded text-xs

@@ -56,6 +56,7 @@ class SettingsController extends Controller
             'manual_account_no' => SiteSetting::get('manual_account_no', ''),
             'manual_account_name' => SiteSetting::get('manual_account_name', ''),
             'manual_funding_enabled' => SiteSetting::get('manual_funding_enabled', '0'),
+            'telegram_url' => SiteSetting::telegramUrl(),
             'daisy_balance' => $daisyBalance,
             'daisy_error' => $daisyError,
             'smspool_balance' => $smspoolBalance,
@@ -77,6 +78,7 @@ class SettingsController extends Controller
             'manual_account_no' => 'nullable|string|max:64',
             'manual_account_name' => 'nullable|string|max:255',
             'manual_funding_enabled' => 'nullable|in:0,1',
+            'telegram_url' => 'nullable|string|max:500',
         ]);
 
         SiteSetting::set('site_name', $validated['site_name'] ?? config('app.name', ''));
@@ -107,6 +109,7 @@ class SettingsController extends Controller
         SiteSetting::set('manual_account_no', $validated['manual_account_no'] ?? '');
         SiteSetting::set('manual_account_name', $validated['manual_account_name'] ?? '');
         SiteSetting::set('manual_funding_enabled', $validated['manual_funding_enabled'] ?? '0');
+        SiteSetting::set('telegram_url', $validated['telegram_url'] ?? '');
 
         return redirect()->route('admin.settings.index')->with('success', 'Settings saved.');
     }

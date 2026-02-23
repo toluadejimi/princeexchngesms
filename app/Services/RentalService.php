@@ -28,6 +28,25 @@ class RentalService
         }
 
         $cost = $this->pricing->getPrice($serverId, $countryCode, $serviceCode);
+        $apiUsd = null;
+
+        // Other Countries (SMSPool): use live price from provider when not configured
+        if ($cost <= 0 && $server->isMultiCountry() && !empty($options['country_id'])) {
+            $client = SmsServerFactory::make($server);
+            if (method_exists($client, 'getPrice')) {
+                $countryId = (int) $options['country_id'];
+                $serviceId = (int) $serviceCode;
+                $poolId = isset($options['pool_id']) && $options['pool_id'] !== '' ? (int) $options['pool_id'] : null;
+                $result = $client->getPrice($countryId, $serviceId, $poolId);
+                $apiUsd = (float) ($result['price'] ?? 0);
+                if ($apiUsd > 0) {
+                    $cost = \App\Models\SiteSetting::displayCurrency() === 'NGN' && \App\Models\SiteSetting::usdToNgnRate() > 0
+                        ? \App\Models\SiteSetting::usdToNairaTotal($apiUsd)
+                        : round($apiUsd * (1 + (float) ($server->profit_margin_percent ?? 0) / 100), 4);
+                }
+            }
+        }
+
         if ($cost <= 0) {
             throw new \RuntimeException('Pricing not configured for this service/country.');
         }
@@ -35,7 +54,9 @@ class RentalService
             $cost = round($cost * 1.2, 4);
         }
 
-        $apiUsd = $this->pricing->getApiPriceUsd($serverId, $countryCode, $serviceCode);
+        if ($apiUsd === null) {
+            $apiUsd = $this->pricing->getApiPriceUsd($serverId, $countryCode, $serviceCode);
+        }
         $maxPriceUsd = $apiUsd > 0 ? $apiUsd * 1.5 : 5.0;
         if (!empty($options['areas']) || !empty($options['carriers'])) {
             $maxPriceUsd = round($maxPriceUsd * 1.2, 2);

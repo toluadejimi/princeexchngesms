@@ -118,6 +118,15 @@
                     </div>
                 </div>
 
+                <h3 class="text-sm font-medium text-slate-700 dark:text-slate-300 mt-6 mb-3">Telegram</h3>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Telegram URL</label>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Link for the floating Telegram icon (e.g. https://t.me/yourchannel). Leave empty to hide the icon.</p>
+                    <input type="url" name="telegram_url" value="{{ old('telegram_url', $telegram_url ?? '') }}" placeholder="https://t.me/yourchannel"
+                        class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 shadow-sm focus:border-mint-500 focus:ring-mint-500">
+                    @error('telegram_url')<p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p>@enderror
+                </div>
+
                 <button type="submit" class="inline-flex items-center px-4 py-2 rounded-lg bg-mint-500 text-white font-medium hover:bg-mint-600 transition mt-4">Save settings</button>
             </form>
         </div>

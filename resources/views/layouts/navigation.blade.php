@@ -1,15 +1,17 @@
-<nav x-data="navWithNotifications('{{ route('notifications.index') }}', '{{ url('/api/notifications') }}', '{{ csrf_token() }}')" @keydown.escape.window="open = false; panelOpen = false" class="bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50 safe-top"
+<nav x-data="navWithNotifications('{{ route('api.notifications.index') }}', '{{ url('/api/notifications') }}', '{{ csrf_token() }}')" @keydown.escape.window="open = false; panelOpen = false" class="bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50 safe-top"
      x-init="fetchUnreadCount()">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center min-h-[3.5rem] sm:h-16">
             <div class="flex min-w-0">
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}" class="flex items-center py-2 -my-2">
+                    <a href="{{ route('dashboard') }}" class="flex items-center py-2 -my-2 gap-2">
                         @if(\App\Models\SiteSetting::logoUrl())
-                            <img src="{{ \App\Models\SiteSetting::logoUrl() }}" alt="{{ \App\Models\SiteSetting::siteName() }}" class="h-7 sm:h-8 object-contain max-w-[140px] sm:max-w-[180px]">
+                            <img src="{{ \App\Models\SiteSetting::logoUrl() }}" alt="{{ \App\Models\SiteSetting::siteName() }}" class="h-7 sm:h-8 object-contain max-w-[140px] sm:max-w-[180px]" onerror="this.style.display='none'; var s=this.nextElementSibling; if(s) s.style.display='inline';">
+                            <span class="logo-fallback hidden font-semibold text-slate-800 dark:text-slate-200 text-sm sm:text-base truncate max-w-[140px] sm:max-w-[180px]" style="display: none;">{{ \App\Models\SiteSetting::siteName() }}</span>
                         @else
-                            <img x-show="darkMode" src="{{ asset('images/logo.png') }}" alt="{{ \App\Models\SiteSetting::siteName() }}" class="h-7 sm:h-8 object-contain max-w-[140px] sm:max-w-[180px]" x-cloak>
-                            <img x-show="!darkMode" src="{{ asset('images/logo-light.png') }}" alt="{{ \App\Models\SiteSetting::siteName() }}" class="h-7 sm:h-8 object-contain max-w-[140px] sm:max-w-[180px]">
+                            <img x-show="darkMode" src="{{ asset('images/logo.png') }}" alt="{{ \App\Models\SiteSetting::siteName() }}" class="h-7 sm:h-8 object-contain max-w-[140px] sm:max-w-[180px]" x-cloak onerror="this.style.display='none'; var s=this.closest('a').querySelector('.logo-fallback'); if(s) s.style.display='inline';">
+                            <img x-show="!darkMode" src="{{ asset('images/logo-light.png') }}" alt="{{ \App\Models\SiteSetting::siteName() }}" class="h-7 sm:h-8 object-contain max-w-[140px] sm:max-w-[180px]" onerror="this.style.display='none'; var s=this.closest('a').querySelector('.logo-fallback'); if(s) s.style.display='inline';">
+                            <span class="logo-fallback hidden font-semibold text-slate-800 dark:text-slate-200 text-sm sm:text-base truncate max-w-[140px] sm:max-w-[180px]" style="display: none;">{{ \App\Models\SiteSetting::siteName() }}</span>
                         @endif
                     </a>
                 </div>
@@ -144,16 +146,16 @@
                 <h3 class="font-semibold text-slate-800 dark:text-slate-200">Notifications</h3>
                 <button type="button" @click="panelOpen = false; selectedNotification = null" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 text-xl leading-none" aria-label="Close">&times;</button>
             </div>
-            <div class="flex-1 overflow-y-auto min-h-0">
+            <div class="flex-1 overflow-y-auto min-h-0 flex flex-col" style="min-height: 200px;">
                 {{-- Detail view when one notification is selected --}}
-                <div x-show="selectedNotification" class="p-4 border-b border-slate-200 dark:border-slate-800">
+                <div x-show="selectedNotification" class="p-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
                     <button type="button" @click="selectedNotification = null" class="text-sm text-mint-600 dark:text-mint-400 hover:underline mb-2">&larr; Back</button>
                     <h4 class="font-semibold text-slate-800 dark:text-slate-200" x-text="selectedNotification ? selectedNotification.title : ''"></h4>
                     <p class="text-sm text-slate-600 dark:text-slate-400 mt-2 whitespace-pre-wrap break-words" x-text="selectedNotification ? selectedNotification.message : ''"></p>
                     <p class="text-xs text-slate-500 dark:text-slate-500 mt-2" x-text="selectedNotification && selectedNotification.created_at ? new Date(selectedNotification.created_at).toLocaleString() : ''"></p>
                 </div>
                 {{-- List view --}}
-                <div x-show="!selectedNotification" class="divide-y divide-slate-200 dark:divide-slate-800">
+                <div x-show="!selectedNotification" class="divide-y divide-slate-200 dark:divide-slate-800 flex-1 min-h-0">
                     <template x-for="n in notifications" :key="n.id">
                         <button type="button" @click="openNotification(n)" class="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition" :class="{ 'bg-mint-50 dark:bg-mint-900/20': !n.read_at }">
                             <p class="font-medium text-slate-800 dark:text-slate-200" x-text="n.title"></p>
@@ -161,8 +163,9 @@
                             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" x-text="n.created_at ? new Date(n.created_at).toLocaleDateString() : ''"></p>
                         </button>
                     </template>
-                    <p x-show="!loading && notifications.length === 0" class="px-4 py-8 text-center text-slate-500 dark:text-slate-400">No notifications yet.</p>
+                    <p x-show="!loading && notifications.length === 0 && !errorMessage" class="px-4 py-8 text-center text-slate-500 dark:text-slate-400">No notifications yet.</p>
                     <p x-show="loading" class="px-4 py-8 text-center text-slate-500 dark:text-slate-400">Loading...</p>
+                    <p x-show="errorMessage" class="px-4 py-4 text-center text-red-500 dark:text-red-400 text-sm" x-text="errorMessage"></p>
                 </div>
             </div>
         </div>

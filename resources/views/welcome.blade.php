@@ -39,14 +39,16 @@
 
     <main>
         {{-- Hero --}}
-        <section class="hero-gradient py-10 sm:py-16 lg:py-24 safe-top">
+        <section class="hero-gradient pt-16 sm:pt-20 lg:pt-24 pb-10 sm:pb-16 lg:pb-24 safe-top">
             <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <div class="h-16 sm:h-24 lg:h-32" aria-hidden="true"></div>
                 <h1 class="text-2xl sm:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-3 sm:mb-4 tracking-tight leading-tight px-1">Virtual SMS numbers for verification</h1>
                 <p class="text-base sm:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-6 sm:mb-10 px-1">USA and global numbers for WhatsApp, Telegram, Google, and 100+ services. Fund your wallet, rent a number, receive your code.</p>
                 @guest
                 <a href="{{ route('register') }}" class="inline-flex items-center justify-center min-h-[48px] w-full max-w-sm mx-auto sm:w-auto sm:max-w-none px-8 py-3.5 sm:py-4 rounded-xl bg-gradient-to-r from-mint-500 to-blue-500 text-white font-semibold text-base sm:text-lg shadow-lg shadow-mint-500/25 hover:shadow-mint-500/30 active:scale-[0.98] transition">Start renting</a>
                 @endguest
             </div>
+
         </section>
 
         {{-- Supported services – social / app icons --}}

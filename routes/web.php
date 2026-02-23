@@ -50,7 +50,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/countries', [RentalController::class, 'countries'])->name('rentals.countries')->middleware('throttle:120,1');
     Route::get('/api/price', [RentalController::class, 'price'])->name('rentals.price')->middleware('throttle:120,1');
     Route::get('/api/pools', [RentalController::class, 'pools'])->name('rentals.pools')->middleware('throttle:120,1');
-    Route::get('/api/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/api/notifications', [NotificationController::class, 'index'])->name('api.notifications.index');
     Route::post('/api/notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
 
     Route::get('/support', [\App\Http\Controllers\SupportController::class, 'index'])->name('support.index');

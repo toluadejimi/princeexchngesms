@@ -11,6 +11,7 @@ Alpine.data('navWithNotifications', (listUrl, baseUrl, csrf) => ({
     unreadCount: 0,
     selectedNotification: null,
     loading: false,
+    errorMessage: '',
     listUrl,
     baseUrl,
     csrf,
@@ -21,26 +22,37 @@ Alpine.data('navWithNotifications', (listUrl, baseUrl, csrf) => ({
                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             });
             if (r.ok) {
-                const d = await r.json();
-                this.unreadCount = Number(d.unread_count) || 0;
+                const text = await r.text();
+                try {
+                    const d = JSON.parse(text);
+                    this.unreadCount = Number(d.unread_count) || 0;
+                } catch (_) {}
             }
         } catch (_) {}
     },
     async fetchNotifications() {
         this.loading = true;
         this.notifications = [];
+        this.errorMessage = '';
         try {
             const r = await fetch(this.listUrl, {
                 credentials: 'same-origin',
                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             });
+            const text = await r.text();
             if (r.ok) {
-                const d = await r.json();
-                this.notifications = Array.isArray(d.notifications) ? d.notifications : [];
-                this.unreadCount = Number(d.unread_count) || 0;
+                try {
+                    const d = JSON.parse(text);
+                    this.notifications = Array.isArray(d.notifications) ? d.notifications : [];
+                    this.unreadCount = Number(d.unread_count) ?? this.unreadCount;
+                } catch (_) {
+                    this.errorMessage = 'Could not load notifications.';
+                }
+            } else {
+                this.errorMessage = 'Could not load notifications.';
             }
         } catch (_) {
-            this.notifications = [];
+            this.errorMessage = 'Could not load notifications.';
         } finally {
             this.loading = false;
         }

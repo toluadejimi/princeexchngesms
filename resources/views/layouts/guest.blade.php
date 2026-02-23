@@ -29,7 +29,7 @@
         <div class="min-h-screen flex flex-col lg:flex-row">
             {{-- Left: Branding (desktop only) --}}
             <div class="hidden lg:flex lg:w-[48%] lg:min-h-screen lg:flex-col lg:justify-between bg-slate-800 dark:bg-slate-900 p-10 xl:p-14">
-                <a href="{{ route('home') }}" class="text-slate-300 hover:text-white text-sm font-semibold transition-colors">SMS Rental</a>
+                <a href="{{ route('home') }}" class="text-slate-300 hover:text-white text-sm font-semibold transition-colors">{{ \App\Models\SiteSetting::siteName() }}</a>
                 <div class="mt-auto">
                     <h1 class="text-2xl xl:text-[1.75rem] font-semibold text-white leading-tight max-w-[280px]">
                         Virtual numbers for verification.
@@ -44,7 +44,7 @@
             <div class="flex-1 flex flex-col lg:justify-center py-8 px-4 sm:px-6 lg:px-12 xl:px-16 bg-slate-100 dark:bg-slate-950">
                 <div class="w-full max-w-[400px] mx-auto lg:mx-0 lg:max-w-[380px]">
                     {{-- Mobile: logo --}}
-                    <a href="{{ route('home') }}" class="lg:hidden inline-block text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-mint-600 dark:hover:text-mint-400 mb-6 transition-colors">SMS Rental</a>
+                    <a href="{{ route('home') }}" class="lg:hidden inline-block text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-mint-600 dark:hover:text-mint-400 mb-6 transition-colors">{{ \App\Models\SiteSetting::siteName() }}</a>
 
                     {{-- Theme toggle --}}
                     <div class="flex justify-end -mt-1 mb-4 lg:mb-6">

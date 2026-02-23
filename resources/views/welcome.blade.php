@@ -41,9 +41,6 @@
         {{-- Hero --}}
         <section class="hero-gradient py-10 sm:py-16 lg:py-24 safe-top">
             <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                <div class="flex justify-center mb-4 sm:mb-6">
-                    <img x-show="!darkMode" src="{{ asset('images/logo-light.png') }}" alt="{{ \App\Models\SiteSetting::siteName() }}" class="h-14 sm:h-20 w-auto max-w-[85vw] object-contain drop-shadow-sm" />
-                </div>
                 <h1 class="text-2xl sm:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-3 sm:mb-4 tracking-tight leading-tight px-1">Virtual SMS numbers for verification</h1>
                 <p class="text-base sm:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-6 sm:mb-10 px-1">USA and global numbers for WhatsApp, Telegram, Google, and 100+ services. Fund your wallet, rent a number, receive your code.</p>
                 @guest

@@ -70,6 +70,10 @@
             </div>
 
             <div class="flex items-center gap-2 sm:hidden">
+                <button @click="darkMode = !darkMode" type="button" class="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition" aria-label="Toggle theme">
+                    <svg x-show="!darkMode" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                    <svg x-show="darkMode" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" x-cloak><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                </button>
                 <button @click="panelOpen = true; fetchNotifications()" type="button" class="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Notifications">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
                     <span x-show="unreadCount > 0" x-cloak class="absolute top-0 right-0 min-w-[1.25rem] h-5 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold" x-text="unreadCount > 99 ? '99+' : unreadCount"></span>
@@ -152,8 +156,9 @@
                 <div x-show="!selectedNotification" class="divide-y divide-slate-200 dark:divide-slate-800">
                     <template x-for="n in notifications" :key="n.id">
                         <button type="button" @click="openNotification(n)" class="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition" :class="{ 'bg-mint-50 dark:bg-mint-900/20': !n.read_at }">
-                            <p class="font-medium text-slate-800 dark:text-slate-200 truncate" x-text="n.title"></p>
-                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" x-text="n.created_at ? new Date(n.created_at).toLocaleDateString() : ''"></p>
+                            <p class="font-medium text-slate-800 dark:text-slate-200" x-text="n.title"></p>
+                            <p class="text-sm text-slate-600 dark:text-slate-400 mt-1 line-clamp-2 break-words" x-text="n.message || ''"></p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" x-text="n.created_at ? new Date(n.created_at).toLocaleDateString() : ''"></p>
                         </button>
                     </template>
                     <p x-show="!loading && notifications.length === 0" class="px-4 py-8 text-center text-slate-500 dark:text-slate-400">No notifications yet.</p>

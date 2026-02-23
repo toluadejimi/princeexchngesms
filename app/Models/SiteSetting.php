@@ -40,11 +40,11 @@ class SiteSetting extends Model
         return (string) static::get('site_logo', '');
     }
 
-    /** Full URL to logo for use in img src, or null if not set. */
+    /** Full URL to logo for use in img src, or null if not set. Uses asset() to avoid Storage/Flysystem (no fileinfo dependency). */
     public static function logoUrl(): ?string
     {
         $path = static::logoPath();
-        return $path ? \Illuminate\Support\Facades\Storage::disk('public')->url($path) : null;
+        return $path ? asset('storage/' . ltrim($path, '/')) : null;
     }
 
     /** Favicon path relative to storage/app/public. Empty if not set. */
@@ -53,11 +53,11 @@ class SiteSetting extends Model
         return (string) static::get('site_favicon', '');
     }
 
-    /** Full URL to favicon for use in link href, or null if not set. */
+    /** Full URL to favicon for use in link href, or null if not set. Uses asset() to avoid Storage/Flysystem (no fileinfo dependency). */
     public static function faviconUrl(): ?string
     {
         $path = static::faviconPath();
-        return $path ? \Illuminate\Support\Facades\Storage::disk('public')->url($path) : null;
+        return $path ? asset('storage/' . ltrim($path, '/')) : null;
     }
 
     /** Display currency: USD or NGN (system charges and wallet use this) */

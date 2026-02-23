@@ -8,7 +8,8 @@
                         @if(\App\Models\SiteSetting::logoUrl())
                             <img src="{{ \App\Models\SiteSetting::logoUrl() }}" alt="{{ \App\Models\SiteSetting::siteName() }}" class="h-7 sm:h-8 object-contain max-w-[140px] sm:max-w-[180px]">
                         @else
-                            <span class="text-lg sm:text-xl font-bold bg-gradient-to-r from-mint-500 to-blue-500 bg-clip-text text-transparent truncate">{{ \App\Models\SiteSetting::siteName() }}</span>
+                            <img x-show="darkMode" src="{{ asset('images/logo.png') }}" alt="{{ \App\Models\SiteSetting::siteName() }}" class="h-7 sm:h-8 object-contain max-w-[140px] sm:max-w-[180px]" x-cloak>
+                            <img x-show="!darkMode" src="{{ asset('images/logo-light.png') }}" alt="{{ \App\Models\SiteSetting::siteName() }}" class="h-7 sm:h-8 object-contain max-w-[140px] sm:max-w-[180px]">
                         @endif
                     </a>
                 </div>

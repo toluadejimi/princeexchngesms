@@ -28,12 +28,15 @@
                     @if($showCountry)
                     <div>
                         <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Country</label>
-                        <select x-model="countryCode" @change="loadServices" class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 shadow-sm focus:border-mint-500 focus:ring-mint-500" required>
+                        <p x-show="countriesLoading" class="text-sm text-slate-500 dark:text-slate-400 mb-1">Loading countries...</p>
+                        <select x-model="countryCode" @change="loadServices" class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 shadow-sm focus:border-mint-500 focus:ring-mint-500"
+                                :disabled="countriesLoading" required>
                             <option value="">Select country</option>
                             <template x-for="c in countries" :key="c.code">
                                 <option :value="c.code" x-text="c.name"></option>
                             </template>
                         </select>
+                        <p x-show="!countriesLoading && countries.length === 0" class="text-sm text-amber-600 dark:text-amber-400 mt-1">No countries available. Please try again later.</p>
                     </div>
                     @endif
 
@@ -136,6 +139,7 @@
                 countries: [],
                 showCountry: config.showCountry,
                 isUsa: config.isUsa || false,
+                countriesLoading: false,
                 priceDisplay: config.priceDisplay || 'USD',
                 usdToNgnRate: config.usdToNgnRate || 0,
                 nairaMarginPercent: config.nairaMarginPercent || 0,
@@ -190,11 +194,22 @@
                 },
                 onServiceSelect() {},
                 async loadCountries() {
-                    const r = await fetch(this.countriesUrl + '?server_id=' + this.serverId, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } });
-                    const d = await r.json();
-                    this.countries = d.countries || [];
-                    if (this.countries.length) this.countryCode = this.countries[0].code;
-                    this.loadServices();
+                    this.countriesLoading = true;
+                    this.countries = [];
+                    try {
+                        const r = await fetch(this.countriesUrl + '?server_id=' + this.serverId, {
+                            credentials: 'same-origin',
+                            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+                        });
+                        const d = await r.json();
+                        this.countries = Array.isArray(d.countries) ? d.countries : [];
+                        if (this.countries.length) this.countryCode = this.countries[0].code;
+                        this.loadServices();
+                    } catch (e) {
+                        this.countries = [];
+                    } finally {
+                        this.countriesLoading = false;
+                    }
                 },
                 async loadServices() {
                     const country = this.countryCode || 'US';

@@ -197,9 +197,73 @@ class RentalController extends Controller
     public function countries(Request $request): JsonResponse
     {
         $serverId = (int) $request->query('server_id');
+        \Illuminate\Support\Facades\Log::info('Other Countries: countries requested', [
+            'server_id' => $serverId,
+            'user_id' => $request->user()?->id,
+        ]);
+
         $server = ApiServer::active()->findOrFail($serverId);
-        $client = \App\Services\Sms\SmsServerFactory::make($server);
-        $countries = $client->getCountries();
+        $countries = [];
+        $failureReason = null;
+        try {
+            $client = \App\Services\Sms\SmsServerFactory::make($server);
+            $countries = $client->getCountries();
+            if (empty($countries)) {
+                $failureReason = 'API returned empty list';
+            }
+        } catch (\Throwable $e) {
+            $failureReason = 'Exception: ' . $e->getMessage();
+            \Illuminate\Support\Facades\Log::warning('Other Countries: countries fetch failed', [
+                'server_id' => $serverId,
+                'server_name' => $server->name,
+                'exception' => get_class($e),
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+        }
+
+        if (empty($countries) && $server->isMultiCountry()) {
+            \Illuminate\Support\Facades\Log::info('Other Countries: using fallback country list', [
+                'server_id' => $serverId,
+                'reason' => $failureReason ?? 'empty',
+                'fallback_count' => count(self::fallbackCountries()),
+            ]);
+            $countries = self::fallbackCountries();
+        }
+
+        \Illuminate\Support\Facades\Log::info('Other Countries: returning countries', [
+            'server_id' => $serverId,
+            'count' => count($countries),
+        ]);
         return response()->json(['countries' => $countries]);
+    }
+
+    /** Fallback country list when multi-country API returns empty or fails. */
+    private static function fallbackCountries(): array
+    {
+        $list = [
+            ['code' => 'US', 'name' => 'United States'],
+            ['code' => 'GB', 'name' => 'United Kingdom'],
+            ['code' => 'NG', 'name' => 'Nigeria'],
+            ['code' => 'IN', 'name' => 'India'],
+            ['code' => 'PK', 'name' => 'Pakistan'],
+            ['code' => 'BD', 'name' => 'Bangladesh'],
+            ['code' => 'KE', 'name' => 'Kenya'],
+            ['code' => 'GH', 'name' => 'Ghana'],
+            ['code' => 'CA', 'name' => 'Canada'],
+            ['code' => 'AU', 'name' => 'Australia'],
+            ['code' => 'DE', 'name' => 'Germany'],
+            ['code' => 'FR', 'name' => 'France'],
+            ['code' => 'RU', 'name' => 'Russia'],
+            ['code' => 'UA', 'name' => 'Ukraine'],
+            ['code' => 'PL', 'name' => 'Poland'],
+            ['code' => 'BR', 'name' => 'Brazil'],
+            ['code' => 'MX', 'name' => 'Mexico'],
+            ['code' => 'ID', 'name' => 'Indonesia'],
+            ['code' => 'PH', 'name' => 'Philippines'],
+            ['code' => 'VN', 'name' => 'Vietnam'],
+        ];
+        return array_map(fn ($c) => ['code' => $c['code'], 'name' => $c['name'], 'provider_id' => $c['code']], $list);
     }
 }

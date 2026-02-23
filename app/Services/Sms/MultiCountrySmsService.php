@@ -84,24 +84,59 @@ class MultiCountrySmsService implements SmsServerInterface
     public function getCountries(): array
     {
         $cacheKey = 'smspool_countries_' . $this->server->id;
-        return Cache::remember($cacheKey, now()->addHour(), function () {
-            $data = $this->post('/country/retrieve_all', [], 'getCountries');
-            $list = $data['data'] ?? $data['countries'] ?? $data;
+        $result = Cache::remember($cacheKey, now()->addHour(), function () {
+            try {
+                $data = $this->post('/country/retrieve_all', [], 'getCountries');
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('SMSPool getCountries: API request failed', [
+                    'server_id' => $this->server->id,
+                    'server_name' => $this->server->name,
+                    'base_url' => $this->server->base_url,
+                    'exception' => get_class($e),
+                    'message' => $e->getMessage(),
+                ]);
+                return [];
+            }
+            $list = $data['data'] ?? $data['countries'] ?? $data['result'] ?? $data;
             if (!is_array($list)) {
+                \Illuminate\Support\Facades\Log::warning('SMSPool getCountries: response is not a list', [
+                    'server_id' => $this->server->id,
+                    'response_keys' => is_array($data) ? array_keys($data) : gettype($data),
+                    'list_type' => gettype($list),
+                    'response_sample' => is_array($data) ? json_encode(array_slice($data, 0, 2)) : substr((string) $data, 0, 500),
+                ]);
                 return [];
             }
             $countries = [];
             foreach ($list as $item) {
-                $id = $item['id'] ?? $item['country_id'] ?? '';
-                $code = $item['iso'] ?? $item['code'] ?? $item['country_code'] ?? (string) $id;
+                if (!is_array($item)) {
+                    continue;
+                }
+                $id = $item['id'] ?? $item['country_id'] ?? $item['countryId'] ?? '';
+                $code = strtoupper((string) ($item['iso'] ?? $item['iso2'] ?? $item['code'] ?? $item['country_code'] ?? (string) $id));
+                $name = $item['name'] ?? $item['country'] ?? $item['country_name'] ?? 'Country ' . $code;
+                if ($code === '' || $code === '0') {
+                    continue;
+                }
                 $countries[] = [
-                    'code' => (string) $code,
-                    'name' => $item['name'] ?? $item['country'] ?? 'Country ' . $code,
+                    'code' => $code,
+                    'name' => (string) $name,
                     'provider_id' => (string) $id,
                 ];
             }
+            if (empty($countries)) {
+                \Illuminate\Support\Facades\Log::warning('SMSPool getCountries: parsed 0 countries from list', [
+                    'server_id' => $this->server->id,
+                    'list_count' => count($list),
+                    'first_item_sample' => isset($list[0]) ? json_encode($list[0]) : 'n/a',
+                ]);
+            }
             return $countries;
         });
+        if (empty($result)) {
+            Cache::forget($cacheKey);
+        }
+        return $result;
     }
 
     public function orderNumber(string $serviceCode, string $countryCode, ?float $maxPrice = null, array $options = []): array

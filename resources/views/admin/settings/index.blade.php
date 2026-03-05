@@ -15,19 +15,19 @@
             <h3 class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4">Provider balances</h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="rounded-lg border border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-800/50">
-                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">USA provider</p>
-                    @if(isset($daisy_error))
-                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $daisy_error }}</p>
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Server 1</p>
+                    @if(isset($server1_error))
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $server1_error }}</p>
                     @else
-                        <p class="mt-1 text-xl font-semibold text-mint-600 dark:text-mint-400">${{ number_format($daisy_balance ?? 0, 2) }}</p>
+                        <p class="mt-1 text-xl font-semibold text-mint-600 dark:text-mint-400">${{ number_format($server1_balance ?? 0, 2) }}</p>
                     @endif
                 </div>
                 <div class="rounded-lg border border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-800/50">
-                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Other countries provider</p>
-                    @if(isset($smspool_error))
-                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $smspool_error }}</p>
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Server 2 (multi-country)</p>
+                    @if(isset($server2_error))
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $server2_error }}</p>
                     @else
-                        <p class="mt-1 text-xl font-semibold text-mint-600 dark:text-mint-400">${{ number_format($smspool_balance ?? 0, 2) }}</p>
+                        <p class="mt-1 text-xl font-semibold text-mint-600 dark:text-mint-400">${{ number_format($server2_balance ?? 0, 2) }}</p>
                     @endif
                 </div>
             </div>
@@ -125,6 +125,26 @@
                     <input type="url" name="telegram_url" value="{{ old('telegram_url', $telegram_url ?? '') }}" placeholder="https://t.me/yourchannel"
                         class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 shadow-sm focus:border-mint-500 focus:ring-mint-500">
                     @error('telegram_url')<p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p>@enderror
+                </div>
+
+                <h3 class="text-sm font-medium text-slate-700 dark:text-slate-300 mt-6 mb-3">Login popup (promotional)</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">A popup shown once every time a user logs in. Users can click &quot;Disable&quot; to close it; it will show again after their next login.</p>
+                <label class="flex items-center gap-2 cursor-pointer mb-3">
+                    <input type="checkbox" name="login_popup_enabled" value="1" {{ ($login_popup_enabled ?? '0') === '1' ? 'checked' : '' }}>
+                    <span>Enable login popup</span>
+                </label>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Popup title</label>
+                        <input type="text" name="login_popup_title" value="{{ old('login_popup_title', $login_popup_title ?? '') }}" placeholder="e.g. Welcome back!"
+                            class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 shadow-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Popup message</label>
+                        <textarea name="login_popup_message" rows="4" placeholder="e.g. Check out our new features..."
+                            class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 shadow-sm">{{ old('login_popup_message', $login_popup_message ?? '') }}</textarea>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Plain text, max 2000 characters.</p>
+                    </div>
                 </div>
 
                 <button type="submit" class="inline-flex items-center px-4 py-2 rounded-lg bg-mint-500 text-white font-medium hover:bg-mint-600 transition mt-4">Save settings</button>

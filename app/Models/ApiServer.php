@@ -57,9 +57,9 @@ class ApiServer extends Model
         return $this->hasMany(ServerPricing::class, 'server_id');
     }
 
-    public function isUsaOnly(): bool
+    public function isSmsConfirmed(): bool
     {
-        return $this->type === 'usa_only';
+        return $this->type === 'smsconfirmed';
     }
 
     public function isMultiCountry(): bool
@@ -67,10 +67,16 @@ class ApiServer extends Model
         return $this->type === 'multi_country';
     }
 
-    /** Customer-facing label (no provider name). */
+    /** Customer-facing label: Server 1 for smsconfirmed, Server 2 for multi_country, else name or sort. */
     public function getDisplayNameAttribute(): string
     {
-        return $this->type === 'usa_only' ? 'USA' : 'Other Countries';
+        if ($this->type === 'smsconfirmed') {
+            return 'Server 1';
+        }
+        if ($this->type === 'multi_country') {
+            return 'Server 2';
+        }
+        return $this->name ?: ('Server ' . ($this->sort_order ?: 1));
     }
 
     public function scopeActive($query)

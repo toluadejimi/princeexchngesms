@@ -26,7 +26,7 @@
                     @foreach($servers as $s)
                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30">
                             <td class="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{{ $s->name }}</td>
-                            <td class="px-4 py-3 text-sm">{{ $s->type === 'usa_only' ? 'USA Only' : 'Multi-Country' }}</td>
+                            <td class="px-4 py-3 text-sm">{{ $s->type === 'smsconfirmed' ? 'Server 1' : 'Server 2 (Multi-Country)' }}</td>
                             <td class="px-4 py-3">
                                 <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium {{ $s->status ? 'bg-mint-100 dark:bg-mint-900/40 text-mint-800 dark:text-mint-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400' }}">{{ $s->status ? 'Active' : 'Disabled' }}</span>
                             </td>

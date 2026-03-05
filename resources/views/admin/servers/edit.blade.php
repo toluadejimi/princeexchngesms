@@ -27,8 +27,8 @@
             <div>
                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Type</label>
                 <select name="type" class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 shadow-sm focus:border-mint-500 focus:ring-mint-500">
-                    <option value="usa_only" {{ old('type', $server->type) === 'usa_only' ? 'selected' : '' }}>USA Only</option>
-                    <option value="multi_country" {{ old('type', $server->type) === 'multi_country' ? 'selected' : '' }}>Multi-Country</option>
+                    <option value="smsconfirmed" {{ old('type', $server->type) === 'smsconfirmed' ? 'selected' : '' }}>Server 1</option>
+                    <option value="multi_country" {{ old('type', $server->type) === 'multi_country' ? 'selected' : '' }}>Server 2 (Multi-Country)</option>
                 </select>
             </div>
             <div>

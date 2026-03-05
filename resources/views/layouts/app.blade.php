@@ -16,7 +16,7 @@
     </head>
     <body class="font-sans antialiased bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 transition-colors duration-200">
         <div class="min-h-screen">
-            @include('layouts.navigation')
+            @include('layouts.navigation', ['openNotifications' => session()->pull('open_notifications', false)])
 
             @isset($header)
                 <header class="bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-200 dark:border-slate-800 shadow-sm safe-top">

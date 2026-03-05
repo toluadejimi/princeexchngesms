@@ -76,6 +76,25 @@ class Rental extends Model
         return in_array($this->status, [self::STATUS_PENDING, self::STATUS_ACTIVE], true);
     }
 
+    /** For Server 1: cancel is allowed only 10 minutes after creation. Returns that timestamp or null (cancel always allowed). */
+    public function cancelAllowedAt(): ?\Carbon\Carbon
+    {
+        if (!$this->relationLoaded('server')) {
+            $this->load('server');
+        }
+        if ($this->server && $this->server->isSmsConfirmed() && $this->created_at) {
+            return $this->created_at->copy()->addMinutes(10);
+        }
+        return null;
+    }
+
+    /** Whether the user is allowed to cancel this rental (respects 10-min rule for Server 1). */
+    public function isCancelAllowed(): bool
+    {
+        $at = $this->cancelAllowedAt();
+        return $at === null || now()->gte($at);
+    }
+
     /**
      * Display name for the service: for multi-country (SMSPool) resolves from provider list by service_code (ID).
      */

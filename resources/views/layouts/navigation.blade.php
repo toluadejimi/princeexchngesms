@@ -1,5 +1,5 @@
-<nav x-data="navWithNotifications('{{ route('api.notifications.index') }}', '{{ url('/api/notifications') }}', '{{ csrf_token() }}')" @keydown.escape.window="open = false; panelOpen = false" class="bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50 safe-top"
-     x-init="fetchUnreadCount()">
+<nav x-data="navWithNotifications('{{ route('api.notifications.index') }}', '{{ url('/api/notifications') }}', '{{ csrf_token() }}', {{ ($openNotifications ?? false) ? 'true' : 'false' }})" @keydown.escape.window="open = false; panelOpen = false" class="bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50 safe-top"
+     x-init="fetchUnreadCount(); if (openNotificationsOnLogin) { panelOpen = true; fetchNotifications(); }">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center min-h-[3.5rem] sm:h-16">
             <div class="flex min-w-0">
@@ -22,11 +22,11 @@
                     <x-nav-link :href="route('fund-wallet.index')" :active="request()->routeIs('fund-wallet.*')">
                         {{ __('Fund Wallet') }}
                     </x-nav-link>
-                    <x-nav-link :href="route('rentals.create.usa')" :active="request()->routeIs('rentals.create.usa')">
-                        {{ __('USA Server') }}
+                    <x-nav-link :href="route('rentals.create.server1')" :active="request()->routeIs('rentals.create.server1')">
+                        {{ __('Server 1') }}
                     </x-nav-link>
-                    <x-nav-link :href="route('rentals.create.countries')" :active="request()->routeIs('rentals.create.countries')">
-                        {{ __('Other Countries') }}
+                    <x-nav-link :href="route('rentals.create.server2')" :active="request()->routeIs('rentals.create.server2')">
+                        {{ __('Server 2') }}
                     </x-nav-link>
                     <x-nav-link :href="route('support.index')" :active="request()->routeIs('support.*')">
                         {{ __('Support') }}
@@ -108,8 +108,8 @@
             <div class="py-3 px-4 space-y-0.5">
                 <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">{{ __('Dashboard') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('fund-wallet.index')" :active="request()->routeIs('fund-wallet.*')">{{ __('Fund Wallet') }}</x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('rentals.create.usa')" :active="request()->routeIs('rentals.create.usa')">{{ __('USA Server') }}</x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('rentals.create.countries')" :active="request()->routeIs('rentals.create.countries')">{{ __('Other Countries') }}</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('rentals.create.server1')" :active="request()->routeIs('rentals.create.server1')">{{ __('Server 1') }}</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('rentals.create.server2')" :active="request()->routeIs('rentals.create.server2')">{{ __('Server 2') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('support.index')" :active="request()->routeIs('support.*')">{{ __('Support') }}</x-responsive-nav-link>
                 @if(auth()->user()?->is_admin)
                 <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.*')">{{ __('Admin') }}</x-responsive-nav-link>
@@ -131,43 +131,50 @@
         </div>
     </div>
 
-    {{-- Notifications side panel (all users) --}}
-    <div x-show="panelOpen"
-         x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-         x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-         class="fixed inset-0 z-[100] overflow-hidden"
-         style="display: none;">
-        <div class="absolute inset-0 bg-slate-900/50 dark:bg-slate-950/70" @click="panelOpen = false; selectedNotification = null"></div>
-        <div class="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-slate-900 shadow-xl flex flex-col z-[101]"
-             x-transition:enter="ease-out duration-200" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
-             x-transition:leave="ease-in duration-150" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full"
-             @click.self="panelOpen = false; selectedNotification = null">
+    {{-- Notifications: teleport to body so modal is in true center of viewport (not under header) --}}
+    <template x-teleport="body">
+        <div x-show="panelOpen"
+             x-cloak
+             x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+             x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+             class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+             style="display: none;">
+            <div class="absolute inset-0 bg-slate-900/60 dark:bg-slate-950/80" @click="closeNotificationModal()" aria-hidden="true"></div>
+            <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-lg max-h-[85vh] flex flex-col bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden"
+             x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+             @click.stop>
             <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-800 shrink-0">
-                <h3 class="font-semibold text-slate-800 dark:text-slate-200">Notifications</h3>
-                <button type="button" @click="panelOpen = false; selectedNotification = null" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 text-xl leading-none" aria-label="Close">&times;</button>
+                <h3 class="font-semibold text-slate-800 dark:text-slate-200" x-text="modalNotification ? 'Notification' : 'Notifications'"></h3>
+                <button type="button" @click="modalNotification ? closeNotificationDetail() : closeNotificationModal()" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 text-xl leading-none" aria-label="Close">
+                    <span x-show="modalNotification">&larr; Back</span>
+                    <span x-show="!modalNotification" x-cloak>&times;</span>
+                </button>
             </div>
-            <div class="flex-1 overflow-y-auto min-h-0 flex flex-col" style="min-height: 200px;">
-                {{-- Detail view when one notification is selected --}}
-                <div x-show="selectedNotification" class="p-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
-                    <button type="button" @click="selectedNotification = null" class="text-sm text-mint-600 dark:text-mint-400 hover:underline mb-2">&larr; Back</button>
-                    <h4 class="font-semibold text-slate-800 dark:text-slate-200" x-text="selectedNotification ? selectedNotification.title : ''"></h4>
-                    <p class="text-sm text-slate-600 dark:text-slate-400 mt-2 whitespace-pre-wrap break-words" x-text="selectedNotification ? selectedNotification.message : ''"></p>
-                    <p class="text-xs text-slate-500 dark:text-slate-500 mt-2" x-text="selectedNotification && selectedNotification.created_at ? new Date(selectedNotification.created_at).toLocaleString() : ''"></p>
+            {{-- Detail view (single notification) --}}
+            <div x-show="modalNotification" class="flex-1 overflow-y-auto min-h-0 p-5 sm:p-6">
+                <h4 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3" x-text="modalNotification ? modalNotification.title : ''"></h4>
+                <p class="text-slate-600 dark:text-slate-400 whitespace-pre-wrap break-words" x-text="modalNotification ? modalNotification.message : ''"></p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-4" x-text="modalNotification && modalNotification.created_at ? new Date(modalNotification.created_at).toLocaleString() : ''"></p>
+                <div class="mt-6 flex justify-end">
+                    <button type="button" @click="closeNotificationDetail()" class="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-sm font-medium hover:bg-slate-300 dark:hover:bg-slate-600 transition">Close</button>
                 </div>
-                {{-- List view --}}
-                <div x-show="!selectedNotification" class="divide-y divide-slate-200 dark:divide-slate-800 flex-1 min-h-0">
-                    <template x-for="n in notifications" :key="n.id">
-                        <button type="button" @click="openNotification(n)" class="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition" :class="{ 'bg-mint-50 dark:bg-mint-900/20': !n.read_at }">
-                            <p class="font-medium text-slate-800 dark:text-slate-200" x-text="n.title"></p>
-                            <p class="text-sm text-slate-600 dark:text-slate-400 mt-1 line-clamp-2 break-words" x-text="n.message || ''"></p>
-                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" x-text="n.created_at ? new Date(n.created_at).toLocaleDateString() : ''"></p>
-                        </button>
-                    </template>
-                    <p x-show="!loading && notifications.length === 0 && !errorMessage" class="px-4 py-8 text-center text-slate-500 dark:text-slate-400">No notifications yet.</p>
-                    <p x-show="loading" class="px-4 py-8 text-center text-slate-500 dark:text-slate-400">Loading...</p>
-                    <p x-show="errorMessage" class="px-4 py-4 text-center text-red-500 dark:text-red-400 text-sm" x-text="errorMessage"></p>
-                </div>
+            </div>
+            {{-- List view --}}
+            <div x-show="!modalNotification" class="flex-1 overflow-y-auto min-h-0 divide-y divide-slate-200 dark:divide-slate-800" style="min-height: 200px;">
+                <template x-for="n in notifications" :key="n.id">
+                    <button type="button" @click="openNotification(n)" class="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition" :class="{ 'bg-mint-50 dark:bg-mint-900/20': !n.read_at }">
+                        <p class="font-medium text-slate-800 dark:text-slate-200" x-text="n.title"></p>
+                        <p class="text-sm text-slate-600 dark:text-slate-400 mt-1 line-clamp-2 break-words" x-text="n.message || ''"></p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" x-text="n.created_at ? new Date(n.created_at).toLocaleDateString() : ''"></p>
+                        <span class="inline-block mt-1.5 text-xs font-medium text-mint-600 dark:text-mint-400">Read more →</span>
+                    </button>
+                </template>
+                <p x-show="!loading && notifications.length === 0 && !errorMessage" class="px-4 py-8 text-center text-slate-500 dark:text-slate-400">No notifications yet.</p>
+                <p x-show="loading" class="px-4 py-8 text-center text-slate-500 dark:text-slate-400">Loading...</p>
+                <p x-show="errorMessage" class="px-4 py-4 text-center text-red-500 dark:text-red-400 text-sm" x-text="errorMessage"></p>
             </div>
         </div>
-    </div>
+        </div>
+    </template>
 </nav>

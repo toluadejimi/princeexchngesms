@@ -65,9 +65,6 @@
                 loading: false,
                 error: '',
                 success: false,
-                get isUsaOnly() {
-                    return this.serverId && servers[this.serverId] && servers[this.serverId].type === 'usa_only';
-                },
                 onServerChange() {
                     this.serviceCode = '';
                     this.services = [];
@@ -75,13 +72,8 @@
                     this.serviceCodeReady = false;
                     if (!this.serverId) { this.showCountry = false; return; }
                     const s = servers[this.serverId];
-                    this.showCountry = s && s.type === 'multi_country';
-                    if (this.showCountry) {
-                        this.loadCountries();
-                    } else {
-                        this.countryCode = 'US';
-                        this.loadServices();
-                    }
+                    this.showCountry = true;
+                    this.loadCountries();
                 },
                 async loadCountries() {
                     if (!this.serverId) return;
@@ -93,7 +85,7 @@
                 },
                 async loadServices() {
                     if (!this.serverId) return;
-                    const country = this.countryCode || 'US';
+                    const country = this.countryCode || (this.countries.length ? this.countries[0].code : '');
                     const r = await fetch(`{{ route('rentals.services') }}?server_id=${this.serverId}&country_code=${country}`, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } });
                     const d = await r.json();
                     this.services = d.services || [];

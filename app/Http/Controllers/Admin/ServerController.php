@@ -27,7 +27,7 @@ class ServerController extends Controller
             'name' => 'required|string|max:255',
             'base_url' => 'required|url',
             'api_key' => 'nullable|string',
-            'type' => 'required|in:usa_only,multi_country',
+            'type' => 'required|in:smsconfirmed,multi_country',
             'profit_margin_percent' => 'nullable|numeric|min:0|max:100',
             'status' => 'boolean',
             'sort_order' => 'integer',

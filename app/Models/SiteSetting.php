@@ -103,6 +103,24 @@ class SiteSetting extends Model
         return (string) static::get('telegram_url', '');
     }
 
+    /** Whether the login promotional popup is enabled (shown once per login). */
+    public static function loginPopupEnabled(): bool
+    {
+        return (string) static::get('login_popup_enabled', '0') === '1';
+    }
+
+    /** Login popup title (shown on every login when enabled). */
+    public static function loginPopupTitle(): string
+    {
+        return (string) static::get('login_popup_title', '');
+    }
+
+    /** Login popup message/body (shown on every login when enabled). */
+    public static function loginPopupMessage(): string
+    {
+        return (string) static::get('login_popup_message', '');
+    }
+
     /**
      * Convert API USD price to customer display. Uses usdToNairaTotal when NGN.
      * Returns ['amount' => number, 'currency' => 'NGN'|'USD', 'symbol' => '₦'|'$'].
@@ -117,7 +135,7 @@ class SiteSetting extends Model
     }
 
     /**
-     * Customer-facing Naira total: (usd × rate) × (1 + margin%) + margin_ngn.
+     * Customer-facing Naira total: (usd × rate + margin_amount) × (1 + margin_percent/100).
      */
     public static function usdToNairaTotal(float $usdPrice): float
     {
@@ -125,9 +143,8 @@ class SiteSetting extends Model
         if ($rate <= 0) {
             return 0;
         }
-        $ngn = $usdPrice * $rate;
+        $ngn = $usdPrice * $rate + static::nairaMarginAmount();
         $ngn *= (1 + static::nairaMarginPercent() / 100);
-        $ngn += static::nairaMarginAmount();
         return round($ngn, 0);
     }
 

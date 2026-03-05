@@ -53,10 +53,19 @@
             </div>
             <ul class="divide-y divide-slate-200 dark:divide-slate-800">
                 @forelse($notifications as $n)
-                    <li class="px-4 py-3">
-                        <p class="font-medium text-slate-800 dark:text-slate-200">{{ $n->title }}</p>
-                        <p class="text-sm text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-2">{{ Str::limit($n->message, 120) }}</p>
-                        <p class="text-xs text-slate-500 dark:text-slate-500 mt-1">{{ $n->created_at->diffForHumans() }}</p>
+                    <li class="px-4 py-3 flex items-start justify-between gap-3">
+                        <div class="min-w-0 flex-1">
+                            <p class="font-medium text-slate-800 dark:text-slate-200">{{ $n->title }}</p>
+                            <p class="text-sm text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-2">{{ Str::limit($n->message, 120) }}</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-500 mt-1">{{ $n->created_at->diffForHumans() }}</p>
+                        </div>
+                        <form action="{{ route('admin.notifications.destroy', $n) }}" method="POST" class="shrink-0" onsubmit="return confirm('Delete this notification? It will be removed for all users.');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="p-2 rounded-lg text-slate-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition" title="Delete">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                        </form>
                     </li>
                 @empty
                     <li class="px-4 py-8 text-center text-slate-500 dark:text-slate-400">No notifications sent yet.</li>

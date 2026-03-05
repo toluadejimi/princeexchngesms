@@ -11,7 +11,7 @@ class SmsServerFactory
     {
         $model = $server instanceof ApiServer ? $server : ApiServer::findOrFail($server);
         return match ($model->type) {
-            'usa_only' => new DaisySmsService($model),
+            'smsconfirmed' => new SmsConfirmedService($model),
             'multi_country' => new MultiCountrySmsService($model),
             default => throw new \InvalidArgumentException('Unknown SMS server type: ' . $model->type),
         };

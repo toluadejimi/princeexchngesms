@@ -16,46 +16,25 @@ class RentalService
 
     /**
      * Create a new rental: validate, charge wallet, order number from provider, save rental.
-     * @param array $options Provider-specific (e.g. areas, carriers, number for DaisySMS USA).
+     * @param array $options Provider-specific (e.g. country_id, pool_id, operator).
      */
     public function createRental(int $userId, int $serverId, string $serviceCode, string $countryCode, array $options = []): Rental
     {
         $user = \App\Models\User::findOrFail($userId);
         $server = ApiServer::active()->findOrFail($serverId);
 
-        if ($server->isUsaOnly()) {
-            $countryCode = 'US';
-        }
-
-        $cost = $this->pricing->getPrice($serverId, $countryCode, $serviceCode);
-        $apiUsd = null;
-
-        // Other Countries (SMSPool): use live price from provider when not configured
-        if ($cost <= 0 && $server->isMultiCountry() && !empty($options['country_id'])) {
+        $apiUsd = $this->pricing->getApiPriceUsd($serverId, $countryCode, $serviceCode);
+        if ($apiUsd <= 0 && $server->isMultiCountry() && !empty($options['country_id']) && method_exists(SmsServerFactory::make($server), 'getPrice')) {
             $client = SmsServerFactory::make($server);
-            if (method_exists($client, 'getPrice')) {
-                $countryId = (int) $options['country_id'];
-                $serviceId = (int) $serviceCode;
-                $poolId = isset($options['pool_id']) && $options['pool_id'] !== '' ? (int) $options['pool_id'] : null;
-                $result = $client->getPrice($countryId, $serviceId, $poolId);
-                $apiUsd = (float) ($result['price'] ?? 0);
-                if ($apiUsd > 0) {
-                    $cost = \App\Models\SiteSetting::displayCurrency() === 'NGN' && \App\Models\SiteSetting::usdToNgnRate() > 0
-                        ? \App\Models\SiteSetting::usdToNairaTotal($apiUsd)
-                        : round($apiUsd * (1 + (float) ($server->profit_margin_percent ?? 0) / 100), 4);
-                }
-            }
+            $result = $client->getPrice((int) $options['country_id'], (int) $serviceCode, isset($options['pool_id']) && $options['pool_id'] !== '' ? (int) $options['pool_id'] : null);
+            $apiUsd = (float) ($result['price'] ?? 0);
         }
-
-        if ($cost <= 0) {
+        if ($apiUsd <= 0) {
             throw new \RuntimeException('Pricing not configured for this service/country.');
         }
+        $cost = $this->pricing->getPrice($serverId, $countryCode, $serviceCode);
         if (!empty($options['areas']) || !empty($options['carriers'])) {
             $cost = round($cost * 1.2, 4);
-        }
-
-        if ($apiUsd === null) {
-            $apiUsd = $this->pricing->getApiPriceUsd($serverId, $countryCode, $serviceCode);
         }
         $maxPriceUsd = $apiUsd > 0 ? $apiUsd * 1.5 : 5.0;
         if (!empty($options['areas']) || !empty($options['carriers'])) {
@@ -77,7 +56,8 @@ class RentalService
 
             try {
                 $client = SmsServerFactory::make($server);
-                $result = $client->orderNumber($serviceCode, $countryCode === 'US' ? '187' : $countryCode, $maxPriceUsd, $options);
+                $providerCountry = !empty($options['country_id']) ? (string) $options['country_id'] : $countryCode;
+                $result = $client->orderNumber($serviceCode, $providerCountry, $maxPriceUsd, $options);
             } catch (\Throwable $e) {
                 $this->wallet->refundForRental($user, $cost, $rental, 'order_failed: ' . $e->getMessage());
                 $rental->update(['status' => Rental::STATUS_CANCELLED]);

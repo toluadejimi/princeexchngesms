@@ -63,29 +63,40 @@
             <span class="text-slate-500 dark:text-slate-400 text-sm">—</span>
         @endif
     </div>
-    <div class="flex flex-wrap gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+    <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
         @if($r->isActive())
             @if($r->server && $r->server->isMultiCountry())
                 <form action="{{ route('rentals.resend', $r->id) }}" method="POST" class="inline">
                     @csrf
-                    <button type="submit" class="min-h-[44px] px-4 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-[0.98]">Resend</button>
+                    <button type="submit" class="min-h-[40px] px-3 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-[0.98]">Resend</button>
                 </form>
                 <form action="{{ route('rentals.activate', $r->id) }}" method="POST" class="inline">
                     @csrf
-                    <button type="submit" class="min-h-[44px] px-4 py-2 rounded-xl text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition active:scale-[0.98]">Activate</button>
+                    <button type="submit" class="min-h-[40px] px-3 py-2 rounded-xl text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition active:scale-[0.98]">Activate</button>
                 </form>
                 <form action="{{ route('rentals.reactivate', $r->id) }}" method="POST" class="inline">
                     @csrf
-                    <button type="submit" class="min-h-[44px] px-4 py-2 rounded-xl text-sm font-medium text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition active:scale-[0.98]">Reactivate</button>
+                    <button type="submit" class="min-h-[40px] px-3 py-2 rounded-xl text-sm font-medium text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition active:scale-[0.98]">Reactivate</button>
                 </form>
             @endif
-            <form action="{{ route('rentals.cancel', $r->id) }}" method="POST" class="inline" onsubmit="return confirm('Cancel and refund?')">
-                @csrf
-                <button type="submit" class="min-h-[44px] px-4 py-2 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition active:scale-[0.98]">Cancel</button>
-            </form>
-        @endif
-        @if($r->phone_number && in_array($r->status, ['completed', 'cancelled', 'expired']) && $r->server && $r->server->isUsaOnly())
-            <a href="{{ route('rentals.create.usa', ['number' => preg_replace('/\D/', '', $r->phone_number)]) }}" class="inline-flex items-center min-h-[44px] px-4 py-2 rounded-xl text-sm font-medium text-mint-600 dark:text-mint-400 hover:bg-mint-50 dark:hover:bg-mint-900/20 transition active:scale-[0.98]">Reuse number</a>
+            @php
+                $cancelAllowedAt = $r->cancelAllowedAt();
+                $cancelAllowed = $r->isCancelAllowed();
+            @endphp
+            @if($cancelAllowed)
+                <form action="{{ route('rentals.cancel', $r->id) }}" method="POST" class="inline" onsubmit="return confirm('Cancel rental and refund to wallet?')">
+                    @csrf
+                    <button type="submit" class="min-h-[40px] inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition active:scale-[0.98]" title="Cancel &amp; refund">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        <span>Cancel</span>
+                    </button>
+                </form>
+            @elseif($cancelAllowedAt)
+                <div class="min-h-[40px] inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800" title="Cancel available 10 min after rental start">
+                    <svg class="w-4 h-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span x-data="cancelCountdown('{{ $cancelAllowedAt->toIso8601String() }}')" x-init="start()" x-text="label">Cancel in 10:00</span>
+                </div>
+            @endif
         @endif
     </div>
 </div>

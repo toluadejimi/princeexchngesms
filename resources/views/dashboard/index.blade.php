@@ -1,12 +1,46 @@
 <x-app-layout>
+    {{-- Login promotional popup (shown once per login when admin has set content) --}}
+    @if(!empty($showLoginPopup))
+    <div x-data="loginPopup('{{ route('api.dismiss-login-popup') }}', '{{ csrf_token() }}')"
+         x-show="open"
+         x-cloak
+         x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+         x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-[100] flex items-center justify-center p-4"
+         style="display: none;">
+        <div class="absolute inset-0 bg-slate-900/60 dark:bg-slate-950/80" @click="dismiss()" aria-hidden="true"></div>
+        <div class="relative z-[101] w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden"
+             x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+             @click.stop>
+            <div class="p-6">
+                @if(!empty($loginPopupTitle))
+                <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">{{ $loginPopupTitle }}</h3>
+                @endif
+                @if(!empty($loginPopupMessage))
+                <p class="text-slate-600 dark:text-slate-400 whitespace-pre-wrap break-words">{{ $loginPopupMessage }}</p>
+                @endif
+                <div class="mt-6 flex flex-wrap items-center justify-end gap-2">
+                    <button type="button" @click="dismiss()" class="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-sm font-medium hover:bg-slate-300 dark:hover:bg-slate-600 transition">
+                        Disable
+                    </button>
+                    <button type="button" @click="dismiss()" class="px-4 py-2 rounded-xl bg-mint-500 text-white text-sm font-medium hover:bg-mint-600 transition">
+                        OK
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <x-slot name="header">
         <div class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <h2 class="font-semibold text-xl text-slate-800 dark:text-slate-200 leading-tight">
                 {{ __('Dashboard') }}
             </h2>
             <div class="flex flex-row gap-2">
-                <a href="{{ route('rentals.create.usa') }}" class="inline-flex items-center justify-center min-h-[44px] px-4 py-2.5 rounded-xl bg-gradient-to-r from-mint-500 to-blue-500 text-white font-medium shadow-neon-mint hover:shadow-lg active:scale-[0.98] transition">USA Server</a>
-                <a href="{{ route('rentals.create.countries') }}" class="inline-flex items-center justify-center min-h-[44px] px-4 py-2.5 rounded-xl bg-slate-600 hover:bg-slate-700 text-white font-medium active:scale-[0.98] transition">Other Countries</a>
+                <a href="{{ route('rentals.create.server1') }}" class="inline-flex items-center justify-center min-h-[44px] px-4 py-2.5 rounded-xl bg-gradient-to-r from-mint-500 to-blue-500 text-white font-medium shadow-neon-mint hover:shadow-lg active:scale-[0.98] transition">Server 1</a>
+                <a href="{{ route('rentals.create.server2') }}" class="inline-flex items-center justify-center min-h-[44px] px-4 py-2.5 rounded-xl bg-slate-600 hover:bg-slate-700 text-white font-medium active:scale-[0.98] transition">Server 2</a>
             </div>
         </div>
     </x-slot>
@@ -65,7 +99,7 @@
                     @include('dashboard.partials.rental-card', ['r' => $r])
                 @empty
                     <div class="p-6 text-center text-slate-500 dark:text-slate-400">
-                        No rentals yet. <a href="{{ route('rentals.create.usa') }}" class="text-mint-600 dark:text-mint-400 hover:underline">USA</a> or <a href="{{ route('rentals.create.countries') }}" class="text-mint-600 dark:text-mint-400 hover:underline">Other Countries</a>
+                        No rentals yet. <a href="{{ route('rentals.create.server1') }}" class="text-mint-600 dark:text-mint-400 hover:underline">Server 1</a> or <a href="{{ route('rentals.create.server2') }}" class="text-mint-600 dark:text-mint-400 hover:underline">Server 2</a>
                     </div>
                 @endforelse
             </div>
@@ -166,19 +200,30 @@
                                             </form>
                                             <span class="text-slate-300 dark:text-slate-600">|</span>
                                         @endif
-                                        <form action="{{ route('rentals.cancel', $r->id) }}" method="POST" class="inline" onsubmit="return confirm('Cancel and refund?')">
-                                            @csrf
-                                            <button type="submit" class="text-red-600 dark:text-red-400 text-sm hover:underline">Cancel</button>
-                                        </form>
-                                    @endif
-                                    @if($r->phone_number && in_array($r->status, ['completed', 'cancelled', 'expired']) && $r->server && $r->server->isUsaOnly())
-                                        <a href="{{ route('rentals.create.usa', ['number' => preg_replace('/\D/', '', $r->phone_number)]) }}" class="text-mint-600 dark:text-mint-400 text-sm hover:underline ml-2">Reuse number</a>
+                                        @php
+                                            $cancelAllowedAt = $r->cancelAllowedAt();
+                                            $cancelAllowed = $r->isCancelAllowed();
+                                        @endphp
+                                        @if($cancelAllowed)
+                                            <form action="{{ route('rentals.cancel', $r->id) }}" method="POST" class="inline" onsubmit="return confirm('Cancel rental and refund to wallet?')">
+                                                @csrf
+                                                <button type="submit" class="inline-flex items-center gap-1.5 text-red-600 dark:text-red-400 text-sm hover:underline" title="Cancel &amp; refund">
+                                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                    Cancel
+                                                </button>
+                                            </form>
+                                        @elseif($cancelAllowedAt)
+                                            <span class="inline-flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-xs" title="Cancel available 10 min after rental start">
+                                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                <span x-data="cancelCountdown('{{ $cancelAllowedAt->toIso8601String() }}')" x-init="start()" x-text="label">Cancel in 10:00</span>
+                                            </span>
+                                        @endif
                                     @endif
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-4 py-8 text-center text-slate-500 dark:text-slate-400">No rentals yet. <a href="{{ route('rentals.create.usa') }}" class="text-mint-600 dark:text-mint-400 hover:underline">USA</a> or <a href="{{ route('rentals.create.countries') }}" class="text-mint-600 dark:text-mint-400 hover:underline">Other Countries</a></td>
+                                <td colspan="7" class="px-4 py-8 text-center text-slate-500 dark:text-slate-400">No rentals yet. <a href="{{ route('rentals.create.server1') }}" class="text-mint-600 dark:text-mint-400 hover:underline">Server 1</a> or <a href="{{ route('rentals.create.server2') }}" class="text-mint-600 dark:text-mint-400 hover:underline">Server 2</a></td>
                             </tr>
                         @endforelse
                     </tbody>

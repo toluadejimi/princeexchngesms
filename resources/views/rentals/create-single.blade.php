@@ -8,6 +8,7 @@
     <div class="max-w-2xl mx-auto sm:px-6 lg:px-8" id="rent-form-container"
         data-config="{{ base64_encode(json_encode([
             'serverId' => $server->id,
+            'serverType' => $server->type ?? '',
             'showCountry' => $showCountry,
             'isUsa' => !$showCountry,
             'priceDisplay' => $priceDisplay ?? 'USD',
@@ -127,10 +128,10 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pool (optional)</label>
-                        <p x-show="poolsLoading" class="text-sm text-slate-500 dark:text-slate-400 mb-1">Loading pools...</p>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1" x-text="serverType === 'smsconfirmed' ? 'Operator (optional)' : 'Pool (optional)'"></label>
+                        <p x-show="poolsLoading" class="text-sm text-slate-500 dark:text-slate-400 mb-1" x-text="serverType === 'smsconfirmed' ? 'Loading operators...' : 'Loading pools...'"></p>
                         <select x-show="!poolsLoading" x-ref="poolSelect" x-model="poolId" @change="loadPrice()" class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 shadow-sm focus:border-mint-500 focus:ring-mint-500">
-                            <option value="">No preference (any pool)</option>
+                            <option value="" x-text="serverType === 'smsconfirmed' ? 'No preference (any operator)' : 'No preference (any pool)'"></option>
                         </select>
                     </div>
                     {{-- Live price & success rate (Other Countries) --}}
@@ -141,7 +142,7 @@
                                 <span class="text-sm font-medium text-slate-600 dark:text-slate-400">Estimated price</span>
                                 <span class="text-xl font-semibold text-mint-600 dark:text-mint-400" x-text="priceDisplay === 'NGN' && priceNgn > 0 ? ('₦' + priceNgn.toLocaleString()) : ('$' + (priceUsd || 0).toFixed(2))"></span>
                             </div>
-                            <div class="flex items-center justify-between gap-4">
+                            <div x-show="successRate > 0" class="flex items-center justify-between gap-4">
                                 <span class="text-sm font-medium text-slate-600 dark:text-slate-400">Success rate</span>
                                 <div class="flex items-center gap-2">
                                     <div class="w-24 h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden" role="progressbar" :aria-valuenow="successRate" aria-valuemin="0" aria-valuemax="100">
@@ -178,6 +179,7 @@
             var config = raw !== null ? (function(){ try { return JSON.parse(raw); } catch(e) { return {}; } })() : (configOrEncoded || {});
             return {
                 serverId: config.serverId,
+                serverType: config.serverType || '',
                 countryCode: config.showCountry ? '' : 'US',
                 serviceCode: '',
                 serviceSearch: '',
@@ -243,9 +245,8 @@
                 formatPrice(usd) {
                     const p = parseFloat(usd) || 0;
                     if (this.priceDisplay === 'NGN' && this.usdToNgnRate > 0) {
-                        let totalNgn = p * this.usdToNgnRate;
-                        if (this.nairaMarginPercent) totalNgn *= (1 + this.nairaMarginPercent / 100);
-                        totalNgn += (this.nairaMarginAmount || 0);
+                        let totalNgn = p * this.usdToNgnRate + (this.nairaMarginAmount || 0);
+                        totalNgn *= (1 + (this.nairaMarginPercent || 0) / 100);
                         return '₦' + Math.round(totalNgn).toLocaleString();
                     }
                     return '$' + p.toFixed(2);
@@ -257,15 +258,22 @@
                         this.number = reuseNumber.replace(/\D/g, '');
                         this.showOptions = true;
                     }
-                    if (this.showCountry) { this.loadCountries(); this.loadPools(); }
-                    else { this.countryCode = 'US'; this.loadServices(); }
+                    if (this.showCountry) {
+                        this.loadCountries();
+                        if (this.serverType !== 'smsconfirmed') this.loadPools();
+                    } else {
+                        this.countryCode = 'US';
+                        this.loadServices();
+                    }
                 },
                 selectCountry(c) {
                     this.countryCode = c.code;
                     this.countrySearch = c.name || c.code;
                     this.countryOpen = false;
+                    this.poolId = '';
                     this.loadServices();
                     this.loadPrice();
+                    this.loadPools();
                 },
                 selectServiceOther(s) {
                     this.serviceCode = s.code;
@@ -351,7 +359,13 @@
                     this.poolsLoading = true;
                     this.pools = [];
                     try {
-                        var r = await fetch(this.poolsUrl + '?server_id=' + this.serverId, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } });
+                        var url = this.poolsUrl + '?server_id=' + this.serverId;
+                        if (this.serverType === 'smsconfirmed' && this.countryCode) {
+                            var country = this.countries.find(function(c) { return c.code === this.countryCode; }.bind(this));
+                            var countryId = country && (country.provider_id || country.id) ? (country.provider_id || country.id) : '';
+                            if (countryId) url += '&country_id=' + encodeURIComponent(countryId);
+                        }
+                        var r = await fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } });
                         var d = await r.json();
                         this.pools = Array.isArray(d.pools) ? d.pools : [];
                         var self = this;

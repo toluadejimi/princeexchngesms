@@ -15,33 +15,33 @@ class SettingsController extends Controller
 {
     public function index(): View
     {
-        $daisyBalance = null;
-        $daisyError = null;
-        $smspoolBalance = null;
-        $smspoolError = null;
+        $server1Balance = null;
+        $server1Error = null;
+        $server2Balance = null;
+        $server2Error = null;
 
-        $usaServer = ApiServer::active()->where('type', 'usa_only')->first();
-        if ($usaServer) {
+        $server1 = ApiServer::active()->where('type', 'smsconfirmed')->first();
+        if ($server1) {
             try {
-                $client = SmsServerFactory::make($usaServer);
-                $daisyBalance = $client->getBalance();
+                $client = SmsServerFactory::make($server1);
+                $server1Balance = $client->getBalance();
             } catch (\Throwable $e) {
-                $daisyError = $e->getMessage();
+                $server1Error = $e->getMessage();
             }
         } else {
-            $daisyError = 'USA server not configured.';
+            $server1Error = 'Server 1 not configured.';
         }
 
-        $multiServer = ApiServer::active()->where('type', 'multi_country')->first();
-        if ($multiServer) {
+        $server2 = ApiServer::active()->where('type', 'multi_country')->first();
+        if ($server2) {
             try {
-                $client = SmsServerFactory::make($multiServer);
-                $smspoolBalance = $client->getBalance();
+                $client = SmsServerFactory::make($server2);
+                $server2Balance = $client->getBalance();
             } catch (\Throwable $e) {
-                $smspoolError = $e->getMessage();
+                $server2Error = $e->getMessage();
             }
         } else {
-            $smspoolError = 'Other Countries server not configured.';
+            $server2Error = 'Server 2 not configured.';
         }
 
         return view('admin.settings.index', [
@@ -57,10 +57,13 @@ class SettingsController extends Controller
             'manual_account_name' => SiteSetting::get('manual_account_name', ''),
             'manual_funding_enabled' => SiteSetting::get('manual_funding_enabled', '0'),
             'telegram_url' => SiteSetting::telegramUrl(),
-            'daisy_balance' => $daisyBalance,
-            'daisy_error' => $daisyError,
-            'smspool_balance' => $smspoolBalance,
-            'smspool_error' => $smspoolError,
+            'server1_balance' => $server1Balance,
+            'server1_error' => $server1Error,
+            'server2_balance' => $server2Balance,
+            'server2_error' => $server2Error,
+            'login_popup_enabled' => SiteSetting::get('login_popup_enabled', '0'),
+            'login_popup_title' => SiteSetting::get('login_popup_title', ''),
+            'login_popup_message' => SiteSetting::get('login_popup_message', ''),
         ]);
     }
 
@@ -79,6 +82,9 @@ class SettingsController extends Controller
             'manual_account_name' => 'nullable|string|max:255',
             'manual_funding_enabled' => 'nullable|in:0,1',
             'telegram_url' => 'nullable|string|max:500',
+            'login_popup_enabled' => 'nullable|in:0,1',
+            'login_popup_title' => 'nullable|string|max:255',
+            'login_popup_message' => 'nullable|string|max:2000',
         ]);
 
         SiteSetting::set('site_name', $validated['site_name'] ?? config('app.name', ''));
@@ -110,6 +116,9 @@ class SettingsController extends Controller
         SiteSetting::set('manual_account_name', $validated['manual_account_name'] ?? '');
         SiteSetting::set('manual_funding_enabled', $validated['manual_funding_enabled'] ?? '0');
         SiteSetting::set('telegram_url', $validated['telegram_url'] ?? '');
+        SiteSetting::set('login_popup_enabled', $validated['login_popup_enabled'] ?? '0');
+        SiteSetting::set('login_popup_title', $validated['login_popup_title'] ?? '');
+        SiteSetting::set('login_popup_message', $validated['login_popup_message'] ?? '');
 
         return redirect()->route('admin.settings.index')->with('success', 'Settings saved.');
     }

@@ -27,6 +27,8 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
 
         $request->session()->regenerate();
+        $request->session()->put('show_login_popup', true);
+        $request->session()->put('open_notifications', true);
 
         return redirect()->intended(route('dashboard', absolute: false));
     }

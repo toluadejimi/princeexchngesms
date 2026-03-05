@@ -34,4 +34,14 @@ class NotificationAdminController extends Controller
         ]);
         return redirect()->route('admin.notifications.index')->with('message', 'Notification sent to all users.');
     }
+
+    /**
+     * Delete a broadcast notification (and its read records).
+     */
+    public function destroy(Notification $notification): RedirectResponse
+    {
+        $notification->reads()->delete();
+        $notification->delete();
+        return redirect()->route('admin.notifications.index')->with('message', 'Notification deleted.');
+    }
 }

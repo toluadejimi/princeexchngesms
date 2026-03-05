@@ -11,32 +11,23 @@ class PricingService
 {
     /**
      * Get amount to charge (in system currency) for a server/country/service.
-     * When display currency is NGN: returns Naira total (API USD × rate + margin).
-     * When USD: returns USD (API price + margin).
+     * Uses API price only; customer price = (API USD × rate + margin_amount) × (1 + margin%) for NGN,
+     * or raw API USD when display currency is USD. Same formula for both servers.
      */
     public function getPrice(int $serverId, string $countryCode, string $serviceCode): float
     {
         $apiUsd = $this->getApiPriceUsd($serverId, $countryCode, $serviceCode);
-        if ($apiUsd > 0 && SiteSetting::displayCurrency() === 'NGN' && SiteSetting::usdToNgnRate() > 0) {
+        if ($apiUsd <= 0) {
+            return 0;
+        }
+        if (SiteSetting::displayCurrency() === 'NGN' && SiteSetting::usdToNgnRate() > 0) {
             return SiteSetting::usdToNairaTotal($apiUsd);
         }
-        if ($apiUsd > 0) {
-            $server = ApiServer::find($serverId);
-            $margin = $server && $server->profit_margin_percent > 0
-                ? (1 + (float) $server->profit_margin_percent / 100)
-                : 1;
-            return round($apiUsd * $margin, 4);
-        }
-        $base = $this->getBasePrice($serverId, $countryCode, $serviceCode);
-        $server = ApiServer::find($serverId);
-        if ($server && $server->profit_margin_percent > 0) {
-            $base = $base * (1 + (float) $server->profit_margin_percent / 100);
-        }
-        return round($base, 4);
+        return round($apiUsd, 4);
     }
 
     /**
-     * Get API price in USD for a service (from provider's getServices). Cached.
+     * Get API price in USD for a service. Server 1: getPriceForCountry(service, country). Server 2: from getServices.
      */
     public function getApiPriceUsd(int $serverId, string $countryCode, string $serviceCode): float
     {
@@ -47,6 +38,13 @@ class PricingService
                 return 0;
             }
             $client = \App\Services\Sms\SmsServerFactory::make($server);
+            if ($server->isSmsConfirmed() && method_exists($client, 'getPriceForCountry')) {
+                $countryId = (int) $countryCode;
+                if ($countryId > 0) {
+                    $result = $client->getPriceForCountry($serviceCode, $countryId);
+                    return (float) ($result['price'] ?? 0);
+                }
+            }
             $services = $client->getServices($countryCode);
             foreach ($services as $s) {
                 if (($s['code'] ?? '') === $serviceCode) {
@@ -74,21 +72,16 @@ class PricingService
     }
 
     /**
-     * Services with prices from API (USD). Customer sees (USD × cover rate) + margin_ngn in Naira on frontend.
+     * Services with API price in USD. Frontend uses global rate + margin to display.
      */
     public function getServicesWithPrices(int $serverId, ?string $countryCode = null): array
     {
         $server = ApiServer::find($serverId);
         $client = \App\Services\Sms\SmsServerFactory::make($server);
-        $services = $client->getServices($countryCode ?? 'US');
-        $countryCode = $countryCode ?? 'US';
+        $countryCode = $countryCode ?? '';
+        $services = $client->getServices($countryCode ?: null);
         foreach ($services as &$s) {
-            $apiUsd = (float) ($s['price'] ?? 0);
-            if ($apiUsd <= 0) {
-                $s['price'] = $this->getPrice($serverId, $countryCode, $s['code']);
-            } else {
-                $s['price'] = $apiUsd;
-            }
+            $s['price'] = (float) ($s['price'] ?? 0);
         }
         return $services;
     }

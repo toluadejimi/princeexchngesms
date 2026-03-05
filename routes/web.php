@@ -37,8 +37,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('/rent', [RentalController::class, 'create'])->name('rentals.create');
-    Route::get('/rent/usa', [RentalController::class, 'createUsa'])->name('rentals.create.usa');
-    Route::get('/rent/countries', [RentalController::class, 'createCountries'])->name('rentals.create.countries');
+    Route::get('/rent/server1', [RentalController::class, 'createServer1'])->name('rentals.create.server1');
+    Route::get('/rent/server2', [RentalController::class, 'createServer2'])->name('rentals.create.server2');
     Route::post('/rent', [RentalController::class, 'store'])->name('rentals.store')->middleware('throttle:30,1');
     Route::post('/rentals/{id}/cancel', [RentalController::class, 'cancel'])->name('rentals.cancel');
     Route::post('/rentals/{id}/expire', [RentalController::class, 'expireIfOverdue'])->name('rentals.expire');
@@ -52,6 +52,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/pools', [RentalController::class, 'pools'])->name('rentals.pools')->middleware('throttle:120,1');
     Route::get('/api/notifications', [NotificationController::class, 'index'])->name('api.notifications.index');
     Route::post('/api/notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+    Route::post('/api/dismiss-login-popup', [DashboardController::class, 'dismissLoginPopup'])->name('api.dismiss-login-popup');
 
     Route::get('/support', [\App\Http\Controllers\SupportController::class, 'index'])->name('support.index');
     Route::get('/support/create', [\App\Http\Controllers\SupportController::class, 'create'])->name('support.create');
@@ -77,12 +78,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('servers/{server}/toggle', [ServerController::class, 'toggle'])->name('servers.toggle');
     Route::get('pricing', [PricingController::class, 'index'])->name('pricing.index');
     Route::post('pricing', [PricingController::class, 'store'])->name('pricing.store');
-    Route::delete('pricing/{pricing}', [PricingController::class, 'destroy'])->name('pricing.destroy');
     Route::post('wallet/adjust', [WalletAdminController::class, 'adjust'])->name('wallet.adjust');
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::post('settings', [SettingsController::class, 'store'])->name('settings.store');
     Route::get('notifications', [NotificationAdminController::class, 'index'])->name('notifications.index');
     Route::post('notifications', [NotificationAdminController::class, 'store'])->name('notifications.store');
+    Route::delete('notifications/{notification}', [NotificationAdminController::class, 'destroy'])->name('notifications.destroy');
     Route::get('support', [\App\Http\Controllers\Admin\SupportTicketController::class, 'index'])->name('support.index');
     Route::get('support/{ticket}', [\App\Http\Controllers\Admin\SupportTicketController::class, 'show'])->name('support.show');
     Route::post('support/{ticket}/reply', [\App\Http\Controllers\Admin\SupportTicketController::class, 'reply'])->name('support.reply');

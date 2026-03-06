@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ApiServer;
 use App\Models\Rental;
+use App\Models\SiteSetting;
 use App\Services\Sms\SmsServerFactory;
 use Illuminate\Support\Facades\DB;
 
@@ -33,8 +34,15 @@ class RentalService
             throw new \RuntimeException('Pricing not configured for this service/country.');
         }
         $cost = $this->pricing->getPrice($serverId, $countryCode, $serviceCode);
+        if ($cost <= 0 && $apiUsd > 0) {
+            $cost = $this->costFromApiUsd($apiUsd);
+        }
         if (!empty($options['areas']) || !empty($options['carriers'])) {
             $cost = round($cost * 1.2, 4);
+        }
+        $balance = (float) $user->wallet_balance;
+        if ($balance < $cost) {
+            throw new \RuntimeException('Insufficient wallet balance. Estimated cost: ' . SiteSetting::formatWalletAmount($cost) . '. Your balance: ' . SiteSetting::formatWalletAmount($balance) . '. Please fund your wallet.');
         }
         $maxPriceUsd = $apiUsd > 0 ? $apiUsd * 1.5 : 5.0;
         if (!empty($options['areas']) || !empty($options['carriers'])) {
@@ -73,6 +81,17 @@ class RentalService
 
             return $rental->fresh();
         });
+    }
+
+    /**
+     * Compute customer cost from API USD (same formula as PricingService / global settings).
+     */
+    private function costFromApiUsd(float $apiUsd): float
+    {
+        if (SiteSetting::displayCurrency() === 'NGN' && SiteSetting::usdToNgnRate() > 0) {
+            return SiteSetting::usdToNairaTotal($apiUsd);
+        }
+        return round($apiUsd, 4);
     }
 
     public function cancelRental(Rental $rental): void

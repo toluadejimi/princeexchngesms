@@ -124,23 +124,26 @@ class Rental extends Model
     }
 
     /**
-     * Display name for the country: for multi-country (SMSPool) resolves from provider list by country_code.
+     * Display name for the country. For Server 1 (SmsConfirmed) and Server 2 (SMSPool), resolves from
+     * provider list by country_code (Server 1 may store numeric id e.g. 187, Server 2 stores ISO code).
      */
     public function getCountryDisplayName(): string
     {
-        $code = strtoupper((string) ($this->country_code ?? ''));
+        $code = (string) ($this->country_code ?? '');
         if ($code === '') {
             return '—';
         }
-        if ($this->server && $this->server->isMultiCountry()) {
+        if ($this->server) {
             try {
                 $client = \App\Services\Sms\SmsServerFactory::make($this->server);
                 if (method_exists($client, 'getCountries')) {
                     $countries = $client->getCountries();
+                    $codeUpper = strtoupper($code);
                     foreach ($countries as $c) {
-                        $itemCode = strtoupper((string) ($c['code'] ?? ''));
-                        if ($itemCode === $code) {
-                            return $c['name'] ?? \App\Helpers\DisplayHelper::countryCodeToName($code);
+                        $itemCode = (string) ($c['code'] ?? '');
+                        $itemId = (string) ($c['provider_id'] ?? $c['id'] ?? $c['ID'] ?? '');
+                        if ($itemCode === $code || strtoupper($itemCode) === $codeUpper || $itemId === $code) {
+                            return (string) ($c['name'] ?? $c['country'] ?? $c['country_name'] ?? \App\Helpers\DisplayHelper::countryCodeToName($code));
                         }
                     }
                 }
@@ -148,6 +151,6 @@ class Rental extends Model
                 // fall through to default
             }
         }
-        return \App\Helpers\DisplayHelper::countryCodeToName($code);
+        return \App\Helpers\DisplayHelper::countryCodeToName(strtoupper($code));
     }
 }

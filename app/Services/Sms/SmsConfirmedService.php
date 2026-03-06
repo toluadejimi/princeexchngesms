@@ -289,6 +289,24 @@ class SmsConfirmedService implements SmsServerInterface
         ];
     }
 
+    /**
+     * getActiveActivations – list of current active activations with smsCodes/smsTexts.
+     * Used to periodically check for codes without calling getStatus per order.
+     */
+    public function getActiveActivations(): array
+    {
+        $body = $this->get('getActiveActivations', [], 'getActiveActivations');
+        $data = json_decode($body, true);
+        if (!is_array($data) || !isset($data['activations'])) {
+            return [];
+        }
+        return is_array($data['activations']) ? $data['activations'] : [];
+    }
+
+    /**
+     * Check activation status and get SMS code via getStatus (id=activation id).
+     * Responses: STATUS_OK:code, STATUS_WAIT_RETRY:code, STATUS_WAIT_CODE, STATUS_CANCEL, NO_ACTIVATION.
+     */
     public function getSms(string $orderId): array
     {
         $body = $this->get('getStatus', ['id' => $orderId], 'getStatus');

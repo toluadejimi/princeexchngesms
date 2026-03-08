@@ -38,10 +38,10 @@
                                 autocomplete="off">
                             <input type="hidden" name="country_code" :value="countryCode" required>
                             <div x-show="countryOpen" x-cloak class="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg">
-                                <template x-for="c in filteredCountries" :key="c.code">
+                                <template x-for="(c, i) in filteredCountries" :key="(c.code || '') + '-' + (c.name || '') + '-' + i">
                                     <div @click="selectCountry(c)" class="px-3 py-2 cursor-pointer hover:bg-mint-50 dark:hover:bg-mint-900/20 text-slate-800 dark:text-slate-200" x-text="c.name"></div>
                                 </template>
-                                <p x-show="filteredCountries.length === 0" class="px-3 py-2 text-slate-500 dark:text-slate-400 text-sm">No match</p>
+                                <p x-show="filteredCountries.length === 0 && !countriesLoading" class="px-3 py-2 text-slate-500 dark:text-slate-400 text-sm" x-text="countries.length === 0 ? 'No countries available' : 'No match'"></p>
                             </div>
                         </div>
                         <p x-show="!countriesLoading && countries.length === 0" class="text-sm text-amber-600 dark:text-amber-400 mt-1">No countries available. Please try again later.</p>
@@ -123,7 +123,7 @@
                                         <span x-text="s.name"></span>
                                     </div>
                                 </template>
-                                <p x-show="filteredServicesOther.length === 0" class="px-3 py-2 text-slate-500 dark:text-slate-400 text-sm" x-text="(serviceSearch || '').trim() ? 'No match' : 'Type to search (e.g. WhatsApp, Telegram)'"></p>
+                                <p x-show="filteredServicesOther.length === 0" class="px-3 py-2 text-slate-500 dark:text-slate-400 text-sm" x-text="services.length === 0 ? 'No services available' : ((serviceSearch || '').trim() ? 'No match' : 'Type to search (e.g. WhatsApp, Telegram)')"></p>
                             </div>
                         </div>
                     </div>
@@ -330,17 +330,21 @@
                             credentials: 'same-origin',
                             headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
                         });
+                        if (!r.ok) {
+                            this.countries = [];
+                            return;
+                        }
                         const d = await r.json();
                         const raw = d && (d.countries ?? d.data?.countries);
                         const list = Array.isArray(raw) ? raw : [];
                         this.countries = list.map(function (c) {
+                            var code = (c && (c.code ?? c.short_name ?? c.iso ?? c.iso2 ?? c.id ?? c.ID)) != null ? String(c.code ?? c.short_name ?? c.iso ?? c.iso2 ?? c.id ?? c.ID) : '';
                             return {
-                                code: (c && (c.code ?? c.short_name ?? c.iso ?? c.iso2)) || '',
+                                code: code,
                                 name: (c && (c.name ?? c.country ?? c.country_name)) || 'Unknown',
-                                provider_id: (c && (c.provider_id ?? c.id ?? c.ID)) != null ? String(c.provider_id ?? c.id ?? c.ID) : ''
+                                provider_id: (c && (c.provider_id ?? c.id ?? c.ID)) != null ? String(c.provider_id ?? c.id ?? c.ID) : code
                             };
                         }).filter(function (c) { return c.code !== ''; });
-                        // No default country — user must choose
                     } catch (e) {
                         this.countries = [];
                     } finally {
@@ -349,9 +353,13 @@
                 },
                 async loadServices() {
                     const country = this.countryCode || 'US';
-                    const r = await fetch(this.servicesUrl + '?server_id=' + this.serverId + '&country_code=' + encodeURIComponent(country), { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } });
-                    const d = await r.json();
-                    this.services = d.services || [];
+                    try {
+                        const r = await fetch(this.servicesUrl + '?server_id=' + this.serverId + '&country_code=' + encodeURIComponent(country), { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } });
+                        const d = r.ok ? await r.json() : {};
+                        this.services = Array.isArray(d.services) ? d.services : [];
+                    } catch (e) {
+                        this.services = [];
+                    }
                     this.serviceCodeReady = true;
                     if (this.showCountry && this.countryCode && this.serviceCode) this.loadPrice();
                 },

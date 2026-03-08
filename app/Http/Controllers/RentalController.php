@@ -405,7 +405,6 @@ class RentalController extends Controller
     private static function fallbackCountries(): array
     {
         $list = [
-            ['code' => 'US', 'name' => 'United States'],
             ['code' => 'GB', 'name' => 'United Kingdom'],
             ['code' => 'NG', 'name' => 'Nigeria'],
             ['code' => 'IN', 'name' => 'India'],

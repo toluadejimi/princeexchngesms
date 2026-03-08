@@ -203,15 +203,10 @@ class SmsConfirmedService implements SmsServerInterface
         return $operators;
     }
 
-    /**
-     * Get countries from API. Merges lists from all services (tg, wa, go, fb) so USA and others
-     * are included even if only one service returns them.
-     */
     public function getCountries(): array
     {
         $cacheKey = 'smsconfirmed_countries_' . $this->server->id;
         return Cache::remember($cacheKey, now()->addHour(), function () {
-            $byCode = [];
             $services = ['tg', 'wa', 'go', 'fb'];
             foreach ($services as $service) {
                 try {
@@ -220,27 +215,26 @@ class SmsConfirmedService implements SmsServerInterface
                     if (!is_array($data) || empty($data['countries'])) {
                         continue;
                     }
+                    $countries = [];
                     foreach ($data['countries'] as $item) {
                         $code = (string) ($item['code'] ?? '');
                         $name = (string) ($item['name'] ?? 'Country ' . $code);
-                        if ($code !== '' && !isset($byCode[$code])) {
-                            $byCode[$code] = [
+                        if ($code !== '') {
+                            $countries[] = [
                                 'code' => $code,
                                 'name' => $name,
                                 'provider_id' => $code,
                             ];
                         }
                     }
+                    if (!empty($countries)) {
+                        return $countries;
+                    }
                 } catch (\Throwable $e) {
                     continue;
                 }
             }
-            $countries = array_values($byCode);
-            if (empty($countries)) {
-                return [];
-            }
-            usort($countries, fn ($a, $b) => strcasecmp($a['name'], $b['name']));
-            return $countries;
+            return [];
         });
     }
 

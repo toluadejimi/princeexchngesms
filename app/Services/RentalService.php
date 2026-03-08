@@ -96,37 +96,44 @@ class RentalService
 
     public function cancelRental(Rental $rental): void
     {
-        if (!$rental->isActive()) {
-            return;
-        }
-        $server = $rental->server;
-        $client = SmsServerFactory::make($server);
-        try {
-            $client->cancelNumber($rental->order_id);
-        } catch (\Throwable) {
-            // log but continue to refund
-        }
-        $this->wallet->refundForRental($rental->user, (float) $rental->cost, $rental, 'user_cancelled');
-        $rental->update(['status' => Rental::STATUS_CANCELLED]);
+        DB::transaction(function () use ($rental) {
+            $rental = Rental::where('id', $rental->id)->lockForUpdate()->first();
+            if (!$rental || !$rental->isActive()) {
+                return;
+            }
+            $server = $rental->server;
+            $client = SmsServerFactory::make($server);
+            try {
+                $client->cancelNumber($rental->order_id);
+            } catch (\Throwable) {
+                // log but continue to refund
+            }
+            $this->wallet->refundForRental($rental->user, (float) $rental->cost, $rental, 'user_cancelled');
+            $rental->update(['status' => Rental::STATUS_CANCELLED]);
+        });
     }
 
     /**
      * Expire an active rental (cancel with provider + refund). Call when expires_at has passed.
+     * Uses a lock so concurrent calls (e.g. status poll + dashboard expire) only refund once.
      */
     public function expireRental(Rental $rental): void
     {
-        if (!in_array($rental->status, [Rental::STATUS_ACTIVE, Rental::STATUS_PENDING], true)) {
-            return;
-        }
-        $server = $rental->server;
-        $client = SmsServerFactory::make($server);
-        try {
-            $client->cancelNumber($rental->order_id);
-        } catch (\Throwable) {
-            // log but continue to refund
-        }
-        $this->wallet->refundForRental($rental->user, (float) $rental->cost, $rental, 'expired');
-        $rental->update(['status' => Rental::STATUS_EXPIRED]);
+        DB::transaction(function () use ($rental) {
+            $rental = Rental::where('id', $rental->id)->lockForUpdate()->first();
+            if (!$rental || !in_array($rental->status, [Rental::STATUS_ACTIVE, Rental::STATUS_PENDING], true)) {
+                return;
+            }
+            $server = $rental->server;
+            $client = SmsServerFactory::make($server);
+            try {
+                $client->cancelNumber($rental->order_id);
+            } catch (\Throwable) {
+                // log but continue to refund
+            }
+            $this->wallet->refundForRental($rental->user, (float) $rental->cost, $rental, 'expired');
+            $rental->update(['status' => Rental::STATUS_EXPIRED]);
+        });
     }
 
     /** Expire all overdue active rentals for a user (e.g. on dashboard load). */

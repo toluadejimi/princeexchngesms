@@ -159,8 +159,17 @@ class RentalService
             $this->expireRental($rental);
             return;
         }
-        $client = SmsServerFactory::make($rental->server);
-        $result = $client->getSms($rental->order_id);
+        try {
+            $client = SmsServerFactory::make($rental->server);
+            $result = $client->getSms((string) $rental->order_id);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Rental getSms failed (will keep polling)', [
+                'rental_id' => $rental->id,
+                'order_id' => $rental->order_id,
+                'message' => $e->getMessage(),
+            ]);
+            return;
+        }
         if ($result['status'] === 'ok' && $result['code']) {
             $code = is_string($result['code']) ? trim($result['code']) : (string) $result['code'];
             $messages = $rental->sms_messages ?? [];

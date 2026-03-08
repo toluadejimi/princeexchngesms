@@ -7,6 +7,7 @@ use App\Models\ApiRequestLog;
 use App\Services\Sms\Contracts\SmsServerInterface;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 /**
  * SMSCONFIRMED API – multi-country SMS (Server 1).
@@ -309,7 +310,7 @@ class SmsConfirmedService implements SmsServerInterface
      */
     public function getSms(string $orderId): array
     {
-        $body = $this->get('getStatus', ['id' => $orderId], 'getStatus');
+        $body = trim($this->get('getStatus', ['id' => $orderId], 'getStatus'));
         if (str_starts_with($body, 'STATUS_OK:')) {
             $code = trim(substr($body, strlen('STATUS_OK:')));
             return ['status' => 'ok', 'code' => $code];
@@ -324,6 +325,10 @@ class SmsConfirmedService implements SmsServerInterface
         if (str_starts_with($body, 'STATUS_CANCEL') || str_starts_with($body, 'NO_ACTIVATION')) {
             return ['status' => 'cancel', 'code' => null];
         }
+        Log::warning('SmsConfirmed getStatus unexpected response', [
+            'order_id' => $orderId,
+            'response_preview' => strlen($body) > 200 ? substr($body, 0, 200) . '…' : $body,
+        ]);
         return ['status' => 'wait', 'code' => null];
     }
 

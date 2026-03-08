@@ -170,15 +170,18 @@ class RentalService
             ]);
             return;
         }
-        if ($result['status'] === 'ok' && $result['code']) {
-            $code = is_string($result['code']) ? trim($result['code']) : (string) $result['code'];
+        $code = isset($result['code']) && $result['code'] !== null
+            ? (is_string($result['code']) ? trim($result['code']) : (string) $result['code'])
+            : '';
+        $hasCode = $code !== '';
+        if ($hasCode && ($result['status'] === 'ok' || $result['status'] === 'wait')) {
             $messages = $rental->sms_messages ?? [];
             if (!is_array($messages)) {
                 $messages = [];
             }
             $last = end($messages);
             $lastCode = is_array($last) ? ($last['code'] ?? '') : '';
-            if ($code !== '' && $code !== $lastCode) {
+            if ($code !== $lastCode) {
                 $messages[] = ['code' => $code, 'received_at' => now()->toIso8601String()];
             }
             $rental->update([

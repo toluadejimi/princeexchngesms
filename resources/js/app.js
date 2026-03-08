@@ -103,9 +103,7 @@ Alpine.data('rentalCountdown', (rentalId, expiresAtIso, expireUrl, csrfToken, st
                 this.expired = true;
                 if (this.timer) clearInterval(this.timer);
                 this.timer = null;
-                if (this.pollTimer) clearInterval(this.pollTimer);
-                this.pollTimer = null;
-                this.triggerExpire();
+                // Do not call expire endpoint when countdown hits 0; keep polling so backend can expire and we reload
                 return;
             }
             const m = Math.floor(left / 60);

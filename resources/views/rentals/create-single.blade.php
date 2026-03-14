@@ -1,11 +1,26 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-slate-800 dark:text-slate-200 leading-tight">
-            {{ $title }}
-        </h2>
+        <div class="space-y-3">
+            <div class="flex items-center justify-between gap-2">
+                <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition min-h-[44px] items-center">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                    <span class="hidden xs:inline">Dashboard</span>
+                </a>
+                <h2 class="font-bold text-lg sm:text-xl text-slate-800 dark:text-slate-200 leading-tight truncate">
+                    {{ $title }}
+                </h2>
+                <div class="w-14 shrink-0"></div>
+            </div>
+            @if(isset($otherServerRoute) && isset($otherServerLabel))
+            <a href="{{ $otherServerRoute }}" class="flex sm:inline-flex items-center justify-center gap-2 w-full sm:w-auto min-h-[44px] px-4 py-3 sm:py-2 rounded-xl text-sm font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 transition">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                Switch to {{ $otherServerLabel }}
+            </a>
+            @endif
+        </div>
     </x-slot>
 
-    <div class="max-w-2xl mx-auto sm:px-6 lg:px-8" id="rent-form-container"
+    <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6" id="rent-form-container"
         data-config="{{ base64_encode(json_encode([
             'serverId' => $server->id,
             'serverType' => $server->type ?? '',
@@ -24,57 +39,57 @@
         ])) }}"
         x-data="rentFormSingle(document.getElementById('rent-form-container').dataset.config)"
         x-init="init()">
-        <p class="text-slate-600 dark:text-slate-400 mb-4">{{ $subtitle }}</p>
-        <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur rounded-2xl border border-slate-200 dark:border-slate-800 shadow-glass p-6">
-            <form @submit.prevent="submit">
-                <div class="space-y-4">
+        <p class="text-slate-600 dark:text-slate-400 text-sm sm:text-base mb-6 leading-relaxed">{{ $subtitle }}</p>
+        <div class="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm sm:shadow-md overflow-hidden">
+            <form @submit.prevent="submit" class="p-4 sm:p-6 lg:p-8">
+                <div class="space-y-6 sm:space-y-5">
                     @if($showCountry)
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Country</label>
-                        <p x-show="countriesLoading" class="text-sm text-slate-500 dark:text-slate-400 mb-1">Loading countries...</p>
+                    <section class="space-y-2">
+                        <label class="block text-sm font-semibold text-slate-800 dark:text-slate-200">Country</label>
+                        <p x-show="countriesLoading" class="text-sm text-slate-500 dark:text-slate-400">Loading countries...</p>
                         <div x-show="!countriesLoading" class="relative" @click.away="countryOpen = false">
                             <input type="text" x-model="countrySearch" @focus="countryOpen = true" placeholder="Search countries..."
-                                class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 shadow-sm focus:border-mint-500 focus:ring-mint-500"
+                                class="w-full min-h-[48px] px-4 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-mint-500 focus:ring-2 focus:ring-mint-500/20 text-base"
                                 autocomplete="off">
                             <input type="hidden" name="country_code" :value="countryCode" required>
-                            <div x-show="countryOpen" x-cloak class="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg">
+                            <div x-show="countryOpen" x-cloak class="absolute z-20 mt-2 left-0 right-0 max-h-[min(60vh,320px)] overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-xl">
                                 <template x-for="(c, i) in filteredCountries" :key="(c.code || '') + '-' + (c.name || '') + '-' + i">
-                                    <div @click="selectCountry(c)" class="px-3 py-2 cursor-pointer hover:bg-mint-50 dark:hover:bg-mint-900/20 text-slate-800 dark:text-slate-200" x-text="c.name"></div>
+                                    <button type="button" @click="selectCountry(c)" class="w-full text-left px-4 py-3.5 min-h-[48px] flex items-center text-slate-800 dark:text-slate-200 hover:bg-mint-50 dark:hover:bg-mint-900/20 active:bg-mint-100 dark:active:bg-mint-900/30 border-b border-slate-100 dark:border-slate-700 last:border-0 text-base" x-text="c.name"></button>
                                 </template>
-                                <p x-show="filteredCountries.length === 0 && !countriesLoading" class="px-3 py-2 text-slate-500 dark:text-slate-400 text-sm" x-text="countries.length === 0 ? 'No countries available' : 'No match'"></p>
+                                <p x-show="filteredCountries.length === 0 && !countriesLoading" class="px-4 py-4 text-slate-500 dark:text-slate-400 text-sm" x-text="countries.length === 0 ? 'No countries available' : 'No match'"></p>
                             </div>
                         </div>
-                        <p x-show="!countriesLoading && countries.length === 0" class="text-sm text-amber-600 dark:text-amber-400 mt-1">No countries available. Please try again later.</p>
-                    </div>
+                        <p x-show="!countriesLoading && countries.length === 0" class="text-sm text-amber-600 dark:text-amber-400">No countries available. Please try again later.</p>
+                    </section>
                     @endif
 
                     {{-- USA: searchable service list + settings gear --}}
                     @if(!$showCountry)
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Service</label>
-                        <div class="flex gap-2 mb-2">
-                            <input type="text" x-model="serviceSearch" placeholder="Search services..." class="flex-1 rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 shadow-sm focus:border-mint-500 focus:ring-mint-500">
-                            <button type="button" @click="applySearch" class="px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium hover:bg-slate-300 dark:hover:bg-slate-600 transition">Search</button>
+                    <section class="space-y-2">
+                        <label class="block text-sm font-semibold text-slate-800 dark:text-slate-200">Service</label>
+                        <div class="flex gap-2">
+                            <input type="text" x-model="serviceSearch" placeholder="Search services..." class="flex-1 min-h-[48px] px-4 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-mint-500 focus:ring-2 focus:ring-mint-500/20 text-base">
+                            <button type="button" @click="applySearch" class="min-h-[48px] px-4 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium hover:bg-slate-300 dark:hover:bg-slate-600 active:scale-[0.98] transition">Search</button>
                         </div>
-                        <div class="border border-slate-200 dark:border-slate-700 rounded-lg max-h-56 overflow-y-auto bg-slate-50 dark:bg-slate-800/50">
+                        <div class="rounded-xl border border-slate-200 dark:border-slate-600 max-h-[min(50vh,280px)] overflow-y-auto bg-slate-50/50 dark:bg-slate-800/50">
                             <template x-for="s in filteredServices" :key="s.code">
-                                <div @click="selectService(s)" :class="serviceCode === s.code ? 'bg-mint-100 dark:bg-mint-900/30 border-mint-500' : 'hover:bg-slate-100 dark:hover:bg-slate-700/50'" class="flex justify-between items-center px-3 py-2 border-b border-slate-100 dark:border-slate-700 last:border-0 cursor-pointer transition">
-                                    <span x-text="s.name" class="font-medium"></span>
-                                    <span x-text="formatPrice(s.price)" class="text-mint-600 dark:text-mint-400 text-sm"></span>
-                                </div>
+                                <button type="button" @click="selectService(s)" :class="serviceCode === s.code ? 'bg-mint-100 dark:bg-mint-900/40 border-l-4 border-mint-500' : 'hover:bg-slate-100 dark:hover:bg-slate-700/50 active:bg-slate-100 dark:active:bg-slate-700'" class="w-full flex justify-between items-center px-4 py-3.5 min-h-[52px] border-b border-slate-100 dark:border-slate-700 last:border-0 text-left transition">
+                                    <span x-text="s.name" class="font-medium text-slate-800 dark:text-slate-200"></span>
+                                    <span x-text="formatPrice(s.price)" class="text-mint-600 dark:text-mint-400 text-sm font-semibold"></span>
+                                </button>
                             </template>
-                            <p x-show="filteredServices.length === 0 && serviceCodeReady" class="p-3 text-sm text-slate-500 dark:text-slate-400">No services match your search.</p>
+                            <p x-show="filteredServices.length === 0 && serviceCodeReady" class="p-4 text-sm text-slate-500 dark:text-slate-400">No services match your search.</p>
                         </div>
-                        <p x-show="!serviceCodeReady" class="text-sm text-slate-500 dark:text-slate-400 mt-1">Loading services...</p>
-                    </div>
+                        <p x-show="!serviceCodeReady" class="text-sm text-slate-500 dark:text-slate-400">Loading services...</p>
+                    </section>
                     <div class="flex items-center gap-2">
-                        <button type="button" @click="showOptions = !showOptions" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition" aria-label="More options">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <button type="button" @click="showOptions = !showOptions" class="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-[0.98] transition" aria-label="More options">
+                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                             <span class="text-sm font-medium">More options</span>
                         </button>
-                        <span x-show="showOptions" class="text-xs text-slate-500 dark:text-slate-400">Area code, carrier, specific number</span>
+                        <span x-show="showOptions" class="text-xs text-slate-500 dark:text-slate-400">Area code, carrier, number</span>
                     </div>
-                    <div x-show="showOptions" x-cloak class="rounded-lg border border-slate-200 dark:border-slate-700 p-4 space-y-4 bg-slate-50 dark:bg-slate-800/30">
+                    <div x-show="showOptions" x-cloak class="rounded-xl border border-slate-200 dark:border-slate-600 p-4 space-y-4 bg-slate-50 dark:bg-slate-800/50">
                         <div>
                             <div class="flex items-center gap-2 mb-1">
                                 <label class="text-sm font-medium text-slate-600 dark:text-slate-400">Area code selection</label>
@@ -83,7 +98,7 @@
                                 </button>
                             </div>
                             <p x-show="showAreaInfo" x-cloak class="text-xs text-slate-500 dark:text-slate-400 mb-2">Preferred area codes. Increases price by 20%.</p>
-                            <input type="text" x-model="areas" placeholder="e.g. 212, 718" class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 shadow-sm text-sm">
+                            <input type="text" x-model="areas" placeholder="e.g. 212, 718" class="w-full min-h-[44px] px-4 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-base">
                         </div>
                         <div>
                             <div class="flex items-center gap-2 mb-1">
@@ -94,14 +109,14 @@
                             </div>
                             <p x-show="showCarrierInfo" x-cloak class="text-xs text-slate-500 dark:text-slate-400 mb-2">Preferred carrier. Increases price by 20%.</p>
                             <div class="flex flex-wrap gap-3">
-                                <label class="inline-flex items-center gap-1.5 cursor-pointer"><input type="checkbox" x-model="carrierTmo" value="tmo"> <span class="text-sm">T-Mobile</span></label>
-                                <label class="inline-flex items-center gap-1.5 cursor-pointer"><input type="checkbox" x-model="carrierVz" value="vz"> <span class="text-sm">Verizon</span></label>
-                                <label class="inline-flex items-center gap-1.5 cursor-pointer"><input type="checkbox" x-model="carrierAtt" value="att"> <span class="text-sm">AT&T</span></label>
+                                <label class="inline-flex items-center gap-3 min-h-[44px] px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/50 transition has-[:checked]:border-mint-500 has-[:checked]:bg-mint-50 dark:has-[:checked]:bg-mint-900/20"><input type="checkbox" x-model="carrierTmo" value="tmo" class="w-5 h-5 rounded border-slate-300 text-mint-500 focus:ring-mint-500"> <span class="text-sm font-medium text-slate-700 dark:text-slate-300">T-Mobile</span></label>
+                                <label class="inline-flex items-center gap-3 min-h-[44px] px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/50 transition has-[:checked]:border-mint-500 has-[:checked]:bg-mint-50 dark:has-[:checked]:bg-mint-900/20"><input type="checkbox" x-model="carrierVz" value="vz" class="w-5 h-5 rounded border-slate-300 text-mint-500 focus:ring-mint-500"> <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Verizon</span></label>
+                                <label class="inline-flex items-center gap-3 min-h-[44px] px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/50 transition has-[:checked]:border-mint-500 has-[:checked]:bg-mint-50 dark:has-[:checked]:bg-mint-900/20"><input type="checkbox" x-model="carrierAtt" value="att" class="w-5 h-5 rounded border-slate-300 text-mint-500 focus:ring-mint-500"> <span class="text-sm font-medium text-slate-700 dark:text-slate-300">AT&T</span></label>
                             </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Specific number (optional, e.g. 11112223344)</label>
-                            <input type="text" x-model="number" placeholder="11112223344" class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 shadow-sm text-sm">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300">Specific number (optional)</label>
+                            <input type="text" x-model="number" placeholder="e.g. 11112223344" class="w-full min-h-[44px] px-4 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-base">
                         </div>
                     </div>
                     @else
@@ -109,48 +124,46 @@
                     <p x-show="number" class="text-sm text-mint-600 dark:text-mint-400">
                         Reusing number: <span class="font-mono" x-text="number"></span>
                     </p>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Service</label>
-                        <p x-show="!serviceCodeReady" class="text-sm text-slate-500 dark:text-slate-400 mb-1">Loading services...</p>
+                    <section class="space-y-2">
+                        <label class="block text-sm font-semibold text-slate-800 dark:text-slate-200">Service</label>
+                        <p x-show="!serviceCodeReady" class="text-sm text-slate-500 dark:text-slate-400">Loading services...</p>
                         <div x-show="serviceCodeReady" class="relative" @click.away="serviceOpen = false">
-                            <input type="text" x-model="serviceSearch" @focus="serviceOpen = true" placeholder="Search services..."
-                                class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 shadow-sm focus:border-mint-500 focus:ring-mint-500"
+                            <input type="text" x-model="serviceSearch" @focus="serviceOpen = true" placeholder="Search services (e.g. WhatsApp, Telegram)"
+                                class="w-full min-h-[48px] px-4 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-mint-500 focus:ring-2 focus:ring-mint-500/20 text-base"
                                 autocomplete="off">
                             <input type="hidden" name="service_code" :value="serviceCode" required>
-                            <div x-show="serviceOpen" x-cloak class="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg">
+                            <div x-show="serviceOpen" x-cloak class="absolute z-20 mt-2 left-0 right-0 max-h-[min(60vh,320px)] overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-xl">
                                 <template x-for="s in filteredServicesOther" :key="s.code">
-                                    <div @click="selectServiceOther(s)" class="px-3 py-2 cursor-pointer hover:bg-mint-50 dark:hover:bg-mint-900/20 text-slate-800 dark:text-slate-200">
-                                        <span x-text="s.name"></span>
-                                    </div>
+                                    <button type="button" @click="selectServiceOther(s)" class="w-full text-left px-4 py-3.5 min-h-[48px] hover:bg-mint-50 dark:hover:bg-mint-900/20 active:bg-mint-100 dark:active:bg-mint-900/30 border-b border-slate-100 dark:border-slate-700 last:border-0 text-slate-800 dark:text-slate-200 text-base" x-text="s.name"></button>
                                 </template>
-                                <p x-show="filteredServicesOther.length === 0" class="px-3 py-2 text-slate-500 dark:text-slate-400 text-sm" x-text="services.length === 0 ? 'No services available' : ((serviceSearch || '').trim() ? 'No match' : 'Type to search (e.g. WhatsApp, Telegram)')"></p>
+                                <p x-show="filteredServicesOther.length === 0" class="px-4 py-4 text-slate-500 dark:text-slate-400 text-sm" x-text="services.length === 0 ? 'No services available' : ((serviceSearch || '').trim() ? 'No match' : 'Type to search (e.g. WhatsApp, Telegram)')"></p>
                             </div>
                         </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1" x-text="serverType === 'smsconfirmed' ? 'Operator (optional)' : 'Pool (optional)'"></label>
-                        <p x-show="poolsLoading" class="text-sm text-slate-500 dark:text-slate-400 mb-1" x-text="serverType === 'smsconfirmed' ? 'Loading operators...' : 'Loading pools...'"></p>
-                        <select x-show="!poolsLoading" x-ref="poolSelect" x-model="poolId" @change="loadPrice()" class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 shadow-sm focus:border-mint-500 focus:ring-mint-500">
+                    </section>
+                    <section class="space-y-2">
+                        <label class="block text-sm font-semibold text-slate-800 dark:text-slate-200" x-text="serverType === 'smsconfirmed' ? 'Operator (optional)' : 'Pool (optional)'"></label>
+                        <p x-show="poolsLoading" class="text-sm text-slate-500 dark:text-slate-400" x-text="serverType === 'smsconfirmed' ? 'Loading operators...' : 'Loading pools...'"></p>
+                        <select x-show="!poolsLoading" x-ref="poolSelect" x-model="poolId" @change="loadPrice()" class="w-full min-h-[48px] px-4 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:border-mint-500 focus:ring-2 focus:ring-mint-500/20 text-base">
                             <option value="" x-text="serverType === 'smsconfirmed' ? 'No preference (any operator)' : 'No preference (any pool)'"></option>
                         </select>
-                    </div>
+                    </section>
                     {{-- Live price & success rate (Other Countries) --}}
-                    <div x-show="showCountry && (priceLoading || priceNgn > 0 || priceUsd > 0 || successRate > 0)" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-4">
+                    <div x-show="showCountry && (priceLoading || priceNgn > 0 || priceUsd > 0 || successRate > 0)" class="rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/60 p-4 sm:p-5">
                         <p x-show="priceLoading" class="text-sm text-slate-500 dark:text-slate-400">Checking price...</p>
-                        <div x-show="!priceLoading && (priceNgn > 0 || priceUsd > 0 || successRate > 0)" class="space-y-3">
+                        <div x-show="!priceLoading && (priceNgn > 0 || priceUsd > 0 || successRate > 0)" class="space-y-4">
                             <div class="flex items-center justify-between gap-4">
-                                <span class="text-sm font-medium text-slate-600 dark:text-slate-400">Estimated price</span>
-                                <span class="text-xl font-semibold text-mint-600 dark:text-mint-400" x-text="priceDisplay === 'NGN' && priceNgn > 0 ? ('₦' + priceNgn.toLocaleString()) : ('$' + (priceUsd || 0).toFixed(2))"></span>
+                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Estimated price</span>
+                                <span class="text-xl sm:text-2xl font-bold text-mint-600 dark:text-mint-400 tabular-nums" x-text="priceDisplay === 'NGN' && priceNgn > 0 ? ('₦' + priceNgn.toLocaleString()) : ('$' + (priceUsd || 0).toFixed(2))"></span>
                             </div>
                             <div x-show="successRate > 0" class="flex items-center justify-between gap-4">
-                                <span class="text-sm font-medium text-slate-600 dark:text-slate-400">Success rate</span>
-                                <div class="flex items-center gap-2">
-                                    <div class="w-24 h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden" role="progressbar" :aria-valuenow="successRate" aria-valuemin="0" aria-valuemax="100">
+                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Success rate</span>
+                                <div class="flex items-center gap-3">
+                                    <div class="w-20 sm:w-24 h-2.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden" role="progressbar" :aria-valuenow="successRate" aria-valuemin="0" aria-valuemax="100">
                                         <div class="h-full rounded-full transition-all duration-300"
                                             :class="successRate >= 80 ? 'bg-emerald-500' : successRate >= 50 ? 'bg-amber-500' : 'bg-red-500'"
                                             :style="'width:' + Math.min(100, successRate) + '%'"></div>
                                     </div>
-                                    <span class="text-sm font-semibold tabular-nums min-w-[3ch]"
+                                    <span class="text-sm font-bold tabular-nums min-w-[3ch]"
                                         :class="successRate >= 80 ? 'text-emerald-600 dark:text-emerald-400' : successRate >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'"
                                         x-text="successRate + '%'"></span>
                                 </div>
@@ -159,13 +172,14 @@
                     </div>
                     @endif
 
-                    <p x-show="error" x-text="error" class="text-sm text-red-600 dark:text-red-400"></p>
-                    <p x-show="success" class="text-sm text-mint-600 dark:text-mint-400">Rented! Redirecting...</p>
-
-                    <button type="submit" :disabled="loading" class="w-full inline-flex justify-center items-center px-4 py-3 rounded-lg bg-gradient-to-r from-mint-500 to-blue-500 text-white font-medium shadow-neon-mint hover:shadow-lg disabled:opacity-50 transition">
-                        <span x-show="!loading">Rent Number</span>
-                        <span x-show="loading">Please wait...</span>
-                    </button>
+                    <div class="space-y-3 pt-2">
+                        <p x-show="error" x-text="error" class="text-sm text-red-600 dark:text-red-400 font-medium"></p>
+                        <p x-show="success" class="text-sm text-mint-600 dark:text-mint-400 font-medium">Rented! Redirecting...</p>
+                        <button type="submit" :disabled="loading" class="w-full min-h-[52px] sm:min-h-[48px] inline-flex justify-center items-center px-6 py-4 sm:py-3 rounded-xl bg-gradient-to-r from-mint-500 to-emerald-500 text-white font-semibold text-base shadow-lg shadow-mint-500/25 hover:shadow-xl hover:shadow-mint-500/30 active:scale-[0.99] disabled:opacity-60 disabled:active:scale-100 transition">
+                            <span x-show="!loading">Rent number</span>
+                            <span x-show="loading" class="inline-flex items-center gap-2"><svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Please wait...</span>
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>

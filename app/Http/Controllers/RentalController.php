@@ -36,6 +36,8 @@ class RentalController extends Controller
             'showCountry' => true,
             'title' => 'Server 1',
             'subtitle' => 'Rent a number for WhatsApp, Telegram, Google, and more.',
+            'otherServerRoute' => route('rentals.create.server2'),
+            'otherServerLabel' => 'Server 2',
         ]));
     }
 
@@ -51,6 +53,8 @@ class RentalController extends Controller
             'showCountry' => true,
             'title' => 'Server 2',
             'subtitle' => 'Rent a number from 150+ countries.',
+            'otherServerRoute' => route('rentals.create.server1'),
+            'otherServerLabel' => 'Server 1',
         ]));
     }
 

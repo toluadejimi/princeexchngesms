@@ -14,7 +14,7 @@
                         <select x-model="serverId" @change="onServerChange" class="w-full min-h-[48px] rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 shadow-sm focus:border-mint-500 focus:ring-mint-500 text-base" required>
                             <option value="">Select region</option>
                             @foreach($servers as $s)
-                                <option value="{{ $s->id }}">{{ $s->display_name }}</option>
+                                <option value="{{ $s->id }}">{{ $s->display_name }}{{ $s->type === 'smsconfirmed' ? ' (Recommended)' : '' }}</option>
                             @endforeach
                         </select>
                     </div>

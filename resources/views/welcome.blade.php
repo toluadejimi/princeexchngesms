@@ -130,7 +130,8 @@
             <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                 <h2 class="text-2xl sm:text-4xl font-bold text-center text-slate-800 dark:text-slate-100 mb-12">Choose your server</h2>
                 <div class="grid md:grid-cols-2 gap-6 sm:gap-8">
-                    <div class="group bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 sm:p-8 shadow-lg hover:shadow-xl hover:border-mint-300 dark:hover:border-mint-700 transition duration-300">
+                    <div class="group relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 sm:p-8 shadow-lg hover:shadow-xl hover:border-mint-300 dark:hover:border-mint-700 transition duration-300">
+                        <span class="absolute top-3 right-3 inline-flex px-2 py-0.5 rounded-full text-[8px] font-semibold uppercase tracking-wider bg-white/95 dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-sm border border-slate-200/80 dark:border-slate-600">Recommended</span>
                         <div class="flex items-center gap-4 mb-4">
                             <span class="text-4xl">🇺🇸</span>
                             <h3 class="text-xl font-bold text-slate-800 dark:text-slate-200">Server 1</h3>

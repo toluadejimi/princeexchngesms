@@ -69,7 +69,7 @@ class RentalController extends Controller
             'server' => $server,
             'showCountry' => true,
             'title' => 'Server 3',
-            'subtitle' => 'Rent a USA number (Getatext). WhatsApp, Telegram, and more.',
+            'subtitle' => 'Rent a USA number. WhatsApp, Telegram, and more.',
             'otherServerRoute' => route('rentals.create.server2'),
             'otherServerLabel' => 'Server 2',
         ]));

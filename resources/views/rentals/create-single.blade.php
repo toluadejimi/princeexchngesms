@@ -6,8 +6,11 @@
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
                     <span class="hidden xs:inline">Dashboard</span>
                 </a>
-                <h2 class="font-bold text-lg sm:text-xl text-slate-800 dark:text-slate-200 leading-tight truncate">
-                    {{ $title }}
+                <h2 class="font-bold text-lg sm:text-xl text-slate-800 dark:text-slate-200 leading-tight flex items-center justify-center gap-2 flex-1 min-w-0">
+                    <span class="truncate">{{ $title }}</span>
+                    @if(($server->type ?? '') === 'getatext')
+                        <span class="inline-flex shrink-0 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-sky-500 text-white shadow-sm" title="US numbers only">US only</span>
+                    @endif
                 </h2>
                 <div class="w-14 shrink-0"></div>
             </div>

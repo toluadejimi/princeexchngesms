@@ -13,6 +13,7 @@ class SmsServerFactory
         return match ($model->type) {
             'smsconfirmed' => new SmsConfirmedService($model),
             'multi_country' => new MultiCountrySmsService($model),
+            'getatext' => new GetatextSmsService($model),
             default => throw new \InvalidArgumentException('Unknown SMS server type: ' . $model->type),
         };
     }

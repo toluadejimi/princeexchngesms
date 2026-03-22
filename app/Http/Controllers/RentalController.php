@@ -58,6 +58,23 @@ class RentalController extends Controller
         ]));
     }
 
+    /** Server 3 (Getatext) – USA numbers via Getatext API. */
+    public function createServer3(): View|\Illuminate\Http\RedirectResponse
+    {
+        $server = ApiServer::active()->where('type', 'getatext')->first();
+        if (!$server) {
+            return redirect()->route('dashboard')->with('error', 'Server 3 is not available at the moment.');
+        }
+        return view('rentals.create-single', array_merge($this->priceSettings(), [
+            'server' => $server,
+            'showCountry' => true,
+            'title' => 'Server 3',
+            'subtitle' => 'Rent a USA number (Getatext). WhatsApp, Telegram, and more.',
+            'otherServerRoute' => route('rentals.create.server2'),
+            'otherServerLabel' => 'Server 2',
+        ]));
+    }
+
     /** Price display settings (safe defaults if SiteSetting fails). */
     private function priceSettings(): array
     {
@@ -108,7 +125,7 @@ class RentalController extends Controller
             $options['number'] = $validated['number'];
         }
         if (!empty($validated['pool_id'])) {
-            if ($server->isSmsConfirmed()) {
+            if ($server->isSmsConfirmed() || $server->isGetatext()) {
                 $options['operator'] = $validated['pool_id'];
             } else {
                 $options['pool_id'] = $validated['pool_id'];
@@ -141,23 +158,13 @@ class RentalController extends Controller
             \Illuminate\Support\Facades\Log::warning('Rental store failed', [
                 'message' => $e->getMessage(),
                 'user_id' => $request->user()?->id,
+                'exception' => $e::class,
                 'trace' => $e->getTraceAsString(),
             ]);
+            // Show provider/runtime errors to the user; hide raw DB/framework details
             $message = 'Unable to complete your request. Please try again in a moment.';
             if ($e instanceof \RuntimeException) {
-                $msg = $e->getMessage();
-                if (str_contains($msg, 'Insufficient wallet balance')
-                    || str_contains($msg, 'No numbers available')
-                    || str_contains($msg, 'Price exceeded')
-                    || str_contains($msg, 'Pricing not configured')
-                    || str_contains($msg, 'Insufficient balance on provider')
-                    || str_contains($msg, 'Too many active rentals')
-                    || str_contains($msg, 'Provider')
-                    || str_contains($msg, 'Order failed')
-                    || str_contains($msg, 'SMSPool')
-                    || str_contains($msg, 'API failed')) {
-                    $message = $msg;
-                }
+                $message = $e->getMessage() ?: $message;
             }
             return response()->json(['message' => $message], 422);
         }
@@ -168,7 +175,7 @@ class RentalController extends Controller
         $rental = \App\Models\Rental::where('user_id', $request->user()->id)->with('server')->findOrFail($id);
         if (!$rental->isCancelAllowed()) {
             $at = $rental->cancelAllowedAt();
-            $msg = $at ? 'Cancel is available 10 minutes after rental start. Please try again in ' . now()->diffForHumans($at, true) . '.' : 'Cancel not available.';
+            $msg = $at ? 'Cancel is not available yet. Please try again in ' . now()->diffForHumans($at, true) . '.' : 'Cancel not available.';
             if ($request->expectsJson()) {
                 return response()->json(['message' => $msg], 422);
             }
@@ -316,6 +323,12 @@ class RentalController extends Controller
             ]);
         }
 
+        if (empty($countries) && $server->isGetatext()) {
+            $countries = [
+                ['code' => '187', 'name' => 'United States', 'provider_id' => '187'],
+            ];
+        }
+
         if (empty($countries) && ($server->isMultiCountry() || $server->isSmsConfirmed())) {
             \Illuminate\Support\Facades\Log::info('Other Countries: using fallback country list', [
                 'server_id' => $serverId,
@@ -347,7 +360,7 @@ class RentalController extends Controller
 
         try {
             $client = \App\Services\Sms\SmsServerFactory::make($server);
-            if ($server->isSmsConfirmed()) {
+            if ($server->isSmsConfirmed() || $server->isGetatext()) {
                 $result = $client->getPriceForCountry($serviceCode, $countryId);
             } elseif ($server->isMultiCountry()) {
                 $serviceId = (int) $serviceCode;
@@ -388,7 +401,7 @@ class RentalController extends Controller
         $server = ApiServer::active()->findOrFail($serverId);
         try {
             $client = \App\Services\Sms\SmsServerFactory::make($server);
-            if ($server->isSmsConfirmed()) {
+            if ($server->isSmsConfirmed() || $server->isGetatext()) {
                 $countryId = (int) $request->query('country_id');
                 $pools = $countryId > 0 && method_exists($client, 'getOperators')
                     ? $client->getOperators($countryId)

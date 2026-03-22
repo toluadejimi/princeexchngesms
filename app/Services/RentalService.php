@@ -72,11 +72,20 @@ class RentalService
                 throw $e;
             }
 
+            $expiresAt = now()->addMinutes(15);
+            if (!empty($result['expires_at'])) {
+                try {
+                    $expiresAt = \Carbon\Carbon::parse($result['expires_at']);
+                } catch (\Throwable) {
+                    // keep default
+                }
+            }
+
             $rental->update([
                 'order_id' => $result['order_id'],
                 'phone_number' => $result['phone_number'],
                 'status' => Rental::STATUS_ACTIVE,
-                'expires_at' => now()->addMinutes(15),
+                'expires_at' => $expiresAt,
             ]);
 
             return $rental->fresh();

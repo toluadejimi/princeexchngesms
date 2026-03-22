@@ -39,6 +39,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/rent', [RentalController::class, 'create'])->name('rentals.create');
     Route::get('/rent/server1', [RentalController::class, 'createServer1'])->name('rentals.create.server1');
     Route::get('/rent/server2', [RentalController::class, 'createServer2'])->name('rentals.create.server2');
+    Route::get('/rent/server3', [RentalController::class, 'createServer3'])->name('rentals.create.server3');
     Route::post('/rent', [RentalController::class, 'store'])->name('rentals.store')->middleware('throttle:30,1');
     Route::post('/rentals/{id}/cancel', [RentalController::class, 'cancel'])->name('rentals.cancel');
     Route::post('/rentals/{id}/expire', [RentalController::class, 'expireIfOverdue'])->name('rentals.expire');

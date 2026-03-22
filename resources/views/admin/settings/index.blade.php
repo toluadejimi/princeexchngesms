@@ -13,7 +13,7 @@
 
         <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur rounded-2xl border border-slate-200 dark:border-slate-800 shadow-glass p-6">
             <h3 class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4">Provider balances</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div class="rounded-lg border border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-800/50">
                     <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Server 1</p>
                     @if(isset($server1_error))
@@ -28,6 +28,14 @@
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $server2_error }}</p>
                     @else
                         <p class="mt-1 text-xl font-semibold text-mint-600 dark:text-mint-400">${{ number_format($server2_balance ?? 0, 2) }}</p>
+                    @endif
+                </div>
+                <div class="rounded-lg border border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-800/50 sm:col-span-2 lg:col-span-1">
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Server 3 (Getatext)</p>
+                    @if(isset($server3_error))
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $server3_error }}</p>
+                    @else
+                        <p class="mt-1 text-xl font-semibold text-mint-600 dark:text-mint-400">${{ number_format($server3_balance ?? 0, 2) }}</p>
                     @endif
                 </div>
             </div>

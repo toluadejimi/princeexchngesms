@@ -38,7 +38,7 @@ class PricingService
                 return 0;
             }
             $client = \App\Services\Sms\SmsServerFactory::make($server);
-            if ($server->isSmsConfirmed() && method_exists($client, 'getPriceForCountry')) {
+            if (($server->isSmsConfirmed() || $server->isGetatext()) && method_exists($client, 'getPriceForCountry')) {
                 $countryId = (int) $countryCode;
                 if ($countryId > 0) {
                     $result = $client->getPriceForCountry($serviceCode, $countryId);

@@ -141,10 +141,10 @@
                         </div>
                     </section>
                     <section class="space-y-2">
-                        <label class="block text-sm font-semibold text-slate-800 dark:text-slate-200" x-text="serverType === 'smsconfirmed' ? 'Operator (optional)' : 'Pool (optional)'"></label>
-                        <p x-show="poolsLoading" class="text-sm text-slate-500 dark:text-slate-400" x-text="serverType === 'smsconfirmed' ? 'Loading operators...' : 'Loading pools...'"></p>
+                        <label class="block text-sm font-semibold text-slate-800 dark:text-slate-200" x-text="(serverType === 'smsconfirmed' || serverType === 'getatext') ? 'Operator (optional)' : 'Pool (optional)'"></label>
+                        <p x-show="poolsLoading" class="text-sm text-slate-500 dark:text-slate-400" x-text="(serverType === 'smsconfirmed' || serverType === 'getatext') ? 'Loading operators...' : 'Loading pools...'"></p>
                         <select x-show="!poolsLoading" x-ref="poolSelect" x-model="poolId" @change="loadPrice()" class="w-full min-h-[48px] px-4 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:border-mint-500 focus:ring-2 focus:ring-mint-500/20 text-base">
-                            <option value="" x-text="serverType === 'smsconfirmed' ? 'No preference (any operator)' : 'No preference (any pool)'"></option>
+                            <option value="" x-text="(serverType === 'smsconfirmed' || serverType === 'getatext') ? 'No preference (any operator)' : 'No preference (any pool)'"></option>
                         </select>
                     </section>
                     {{-- Live price & success rate (Other Countries) --}}
@@ -274,7 +274,7 @@
                     }
                     if (this.showCountry) {
                         this.loadCountries();
-                        if (this.serverType !== 'smsconfirmed') this.loadPools();
+                        if (this.serverType !== 'smsconfirmed' && this.serverType !== 'getatext') this.loadPools();
                     } else {
                         this.countryCode = 'US';
                         this.loadServices();
@@ -382,7 +382,7 @@
                     this.pools = [];
                     try {
                         var url = this.poolsUrl + '?server_id=' + this.serverId;
-                        if (this.serverType === 'smsconfirmed' && this.countryCode) {
+                        if ((this.serverType === 'smsconfirmed' || this.serverType === 'getatext') && this.countryCode) {
                             var country = this.countries.find(function(c) { return c.code === this.countryCode; }.bind(this));
                             var countryId = country && (country.provider_id || country.id) ? (country.provider_id || country.id) : '';
                             if (countryId) url += '&country_id=' + encodeURIComponent(countryId);

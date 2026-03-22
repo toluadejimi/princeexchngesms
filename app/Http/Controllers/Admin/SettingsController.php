@@ -44,6 +44,20 @@ class SettingsController extends Controller
             $server2Error = 'Server 2 not configured.';
         }
 
+        $server3Balance = null;
+        $server3Error = null;
+        $server3 = ApiServer::active()->where('type', 'getatext')->first();
+        if ($server3) {
+            try {
+                $client = SmsServerFactory::make($server3);
+                $server3Balance = $client->getBalance();
+            } catch (\Throwable $e) {
+                $server3Error = $e->getMessage();
+            }
+        } else {
+            $server3Error = 'Server 3 not configured or disabled.';
+        }
+
         return view('admin.settings.index', [
             'site_name' => SiteSetting::get('site_name', config('app.name', '')),
             'site_logo_url' => SiteSetting::logoUrl(),
@@ -61,6 +75,8 @@ class SettingsController extends Controller
             'server1_error' => $server1Error,
             'server2_balance' => $server2Balance,
             'server2_error' => $server2Error,
+            'server3_balance' => $server3Balance,
+            'server3_error' => $server3Error,
             'login_popup_enabled' => SiteSetting::get('login_popup_enabled', '0'),
             'login_popup_title' => SiteSetting::get('login_popup_title', ''),
             'login_popup_message' => SiteSetting::get('login_popup_message', ''),

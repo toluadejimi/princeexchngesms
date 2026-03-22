@@ -28,5 +28,17 @@ class ApiServerSeeder extends Seeder
             'status' => true,
             'sort_order' => 2,
         ]);
+
+        ApiServer::firstOrCreate(
+            ['type' => 'getatext'],
+            [
+                'name' => 'Server 3',
+                'base_url' => env('GETATEXT_BASE_URL', 'https://getatext.com'),
+                'api_key' => env('GETATEXT_API_KEY') ?: 'placeholder-set-real-key-in-admin',
+                'profit_margin_percent' => 12,
+                'status' => false,
+                'sort_order' => 3,
+            ]
+        );
     }
 }

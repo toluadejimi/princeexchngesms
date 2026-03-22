@@ -76,7 +76,7 @@ class Rental extends Model
         return in_array($this->status, [self::STATUS_PENDING, self::STATUS_ACTIVE], true);
     }
 
-    /** For Server 1: cancel is allowed only 10 minutes after creation. Returns that timestamp or null (cancel always allowed). */
+    /** For Server 1: cancel is allowed only 10 minutes after creation. Server 3 (Getatext): 1 minute per provider. */
     public function cancelAllowedAt(): ?\Carbon\Carbon
     {
         if (!$this->relationLoaded('server')) {
@@ -84,6 +84,9 @@ class Rental extends Model
         }
         if ($this->server && $this->server->isSmsConfirmed() && $this->created_at) {
             return $this->created_at->copy()->addMinutes(10);
+        }
+        if ($this->server && $this->server->isGetatext() && $this->created_at) {
+            return $this->created_at->copy()->addMinute();
         }
         return null;
     }
@@ -118,6 +121,21 @@ class Rental extends Model
                 }
             } catch (\Throwable) {
                 // fall through to default
+            }
+        }
+        if ($this->server && $this->server->isGetatext()) {
+            try {
+                $client = \App\Services\Sms\SmsServerFactory::make($this->server);
+                if (method_exists($client, 'getServices')) {
+                    $services = $client->getServices(null);
+                    foreach ($services as $s) {
+                        if (($s['code'] ?? '') === (string) $code) {
+                            return $s['name'] ?? ucfirst((string) $code);
+                        }
+                    }
+                }
+            } catch (\Throwable) {
+                // fall through
             }
         }
         return \App\Helpers\DisplayHelper::serviceCodeToName($code);

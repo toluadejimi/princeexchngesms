@@ -1,2 +1,8 @@
 *.log
 .env
+
+# Vite: `npm run dev` creates this file and makes @vite load from localhost:5173/5174.
+# If this is deployed, production CSS/JS breaks — delete public/hot on the server and use npm run build.
+/public/hot
+
+/node_modules

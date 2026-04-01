@@ -48,7 +48,8 @@ class MultiCountrySmsService implements SmsServerInterface
         }
 
         if (!$response->successful()) {
-            throw new \RuntimeException('SMSPool API failed: HTTP ' . $response->status());
+            // Customer-facing message should not expose provider name; log handles details.
+            throw new \RuntimeException('Network error, please try again.');
         }
 
         $body = $response->json();

@@ -433,12 +433,20 @@
                         if (this.isUsa && this.getCarriersParam()) form.append('carriers', this.getCarriersParam());
                         if (this.number) form.append('number', this.number.replace(/\D/g,''));
                         const r = await fetch(this.storeUrl, { method: 'POST', body: form, headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } });
-                        const d = await r.json();
-                        if (!r.ok) throw new Error(d.message || 'Request failed');
+                        const raw = await r.text();
+                        let d = {};
+                        try {
+                            d = raw ? JSON.parse(raw) : {};
+                        } catch (parseErr) {
+                            d = {};
+                        }
+                        if (!r.ok) {
+                            throw new Error(d.message || 'Something went wrong. Please try again in a moment.');
+                        }
                         this.success = true;
                         if (d.redirect) window.location.href = d.redirect;
                     } catch (e) {
-                        this.error = e.message;
+                        this.error = (e && e.message) || 'Something went wrong. Please try again in a moment.';
                     } finally {
                         this.loading = false;
                     }

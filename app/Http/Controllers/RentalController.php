@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ApiServer;
 use App\Models\SiteSetting;
+use App\Support\CustomerFacing;
 use App\Services\PricingService;
 use App\Services\RentalService;
 use Illuminate\Http\JsonResponse;
@@ -161,11 +162,7 @@ class RentalController extends Controller
                 'exception' => $e::class,
                 'trace' => $e->getTraceAsString(),
             ]);
-            // Show provider/runtime errors to the user; hide raw DB/framework details
-            $message = 'Unable to complete your request. Please try again in a moment.';
-            if ($e instanceof \RuntimeException) {
-                $message = $e->getMessage() ?: $message;
-            }
+            $message = CustomerFacing::exceptionMessage($e, true);
             return response()->json(['message' => $message], 422);
         }
     }
@@ -371,12 +368,17 @@ class RentalController extends Controller
                 return response()->json(['message' => 'Price not available for this server.'], 422);
             }
         } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Rental price lookup failed', [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'price_usd' => 0,
                 'price_ngn' => 0,
                 'success_rate' => 0,
                 'currency' => SiteSetting::displayCurrency(),
-                'message' => $e->getMessage(),
+                'message' => CustomerFacing::exceptionMessage($e, true),
             ], 200);
         }
 

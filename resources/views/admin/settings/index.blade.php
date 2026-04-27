@@ -23,7 +23,7 @@
                     @endif
                 </div>
                 <div class="rounded-lg border border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-800/50">
-                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Server 2 (multi-country)</p>
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Server 2</p>
                     @if(isset($server2_error))
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $server2_error }}</p>
                     @else
@@ -31,7 +31,7 @@
                     @endif
                 </div>
                 <div class="rounded-lg border border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-800/50 sm:col-span-2 lg:col-span-1">
-                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Server 3 (Getatext)</p>
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Server 3</p>
                     @if(isset($server3_error))
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $server3_error }}</p>
                     @else

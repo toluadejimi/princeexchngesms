@@ -43,15 +43,15 @@
                     <p class="text-slate-500 dark:text-slate-400 text-sm sm:text-base mt-0.5">Overview and rentals</p>
                 </div>
                 <div class="flex flex-wrap gap-2 sm:gap-2 flex-shrink-0 justify-stretch sm:justify-end">
-                    <a href="{{ route('rentals.create.server1') }}" title="{{ __('Server 1') }}" class="relative flex-1 min-w-[5.5rem] sm:flex-none inline-flex items-center justify-center min-h-[48px] px-4 sm:px-5 py-2.5 rounded-2xl bg-gradient-to-r from-mint-500 to-teal-500 text-white text-sm sm:text-base font-semibold shadow-lg shadow-mint-500/25 hover:shadow-xl hover:shadow-mint-500/30 active:scale-[0.98] transition">
-                        <span class="absolute -top-0.5 -right-0.5 inline-flex px-1 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-400 text-amber-950 shadow-sm">Rec</span>
+                    <a href="{{ route('rentals.create.server1') }}" title="{{ __('Server 1') }} — US numbers" class="relative flex-1 min-w-[5.5rem] sm:flex-none inline-flex items-center justify-center min-h-[48px] px-4 sm:px-5 py-2.5 rounded-2xl bg-gradient-to-r from-mint-500 to-teal-500 text-white text-sm sm:text-base font-semibold shadow-lg shadow-mint-500/25 hover:shadow-xl hover:shadow-mint-500/30 active:scale-[0.98] transition">
+                        <span class="absolute -top-1 -right-1 flex flex-col gap-0.5 items-end pointer-events-none">
+                            <span class="inline-flex px-1 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-400 text-amber-950 shadow-sm">Rec</span>
+                            <span class="inline-flex px-1 py-0.5 rounded text-[9px] font-semibold leading-none bg-sky-500 text-white shadow-sm">US only</span>
+                        </span>
                         SV1
                     </a>
                     <a href="{{ route('rentals.create.server2') }}" title="{{ __('Server 2') }}" class="flex-1 min-w-[5.5rem] sm:flex-none inline-flex items-center justify-center min-h-[48px] px-4 sm:px-5 py-2.5 rounded-2xl bg-slate-700 hover:bg-slate-600 dark:bg-slate-600 dark:hover:bg-slate-500 text-white text-sm sm:text-base font-semibold active:scale-[0.98] transition">SV2</a>
-                    <a href="{{ route('rentals.create.server3') }}" title="{{ __('Server 3') }} — US only" class="relative flex-1 min-w-[5.5rem] sm:flex-none inline-flex items-center justify-center min-h-[48px] px-4 sm:px-5 py-2.5 rounded-2xl bg-slate-700 hover:bg-slate-600 dark:bg-slate-600 dark:hover:bg-slate-500 text-white text-sm sm:text-base font-semibold active:scale-[0.98] transition">
-                        <span class="absolute -top-0.5 -right-0.5 inline-flex px-1 py-0.5 rounded text-[9px] font-semibold leading-none bg-sky-500 text-white shadow-sm">US only</span>
-                        SV3
-                    </a>
+                    <a href="{{ route('rentals.create.server3') }}" title="{{ __('Server 3') }}" class="flex-1 min-w-[5.5rem] sm:flex-none inline-flex items-center justify-center min-h-[48px] px-4 sm:px-5 py-2.5 rounded-2xl bg-slate-700 hover:bg-slate-600 dark:bg-slate-600 dark:hover:bg-slate-500 text-white text-sm sm:text-base font-semibold active:scale-[0.98] transition">SV3</a>
                 </div>
             </div>
         </div>
@@ -134,12 +134,14 @@
                     <a href="{{ route('dashboard', request()->except('server','status')) }}" class="shrink-0 min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-medium inline-flex items-center {{ !request('server') && !request('status') ? 'bg-mint-500 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700' }} transition">All</a>
                     @foreach($servers as $s)
                         <a href="{{ route('dashboard', ['server' => $s->id] + request()->except('server')) }}" title="{{ $s->display_name }}" class="shrink-0 min-h-[44px] px-3 sm:px-4 py-2.5 rounded-xl text-sm font-semibold inline-flex items-center gap-1 {{ request('server') == $s->id ? 'bg-mint-500 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700' }} transition">
-                            @if($s->type === 'smsconfirmed')
-                                SV1
-                            @elseif($s->type === 'getatext')
-                                <span>SV3</span><span class="inline-flex px-1 py-0.5 rounded text-[9px] font-semibold bg-sky-500 text-white {{ request('server') == $s->id ? 'ring-1 ring-white/30' : '' }}">US only</span>
-                            @else
+                            @if($s->type === 'getatext')
+                                <span>SV1</span><span class="inline-flex px-1 py-0.5 rounded text-[9px] font-semibold bg-sky-500 text-white {{ request('server') == $s->id ? 'ring-1 ring-white/30' : '' }}">US only</span>
+                            @elseif($s->type === 'multi_country')
                                 SV2
+                            @elseif($s->type === 'fivesim')
+                                SV3
+                            @else
+                                <span class="text-xs opacity-80">{{ $s->display_name }}</span>
                             @endif
                         </a>
                     @endforeach
@@ -159,12 +161,15 @@
                         <p class="text-slate-600 dark:text-slate-400 font-medium mb-1">No rentals yet</p>
                         <p class="text-sm text-slate-500 dark:text-slate-500 mb-4">Rent a number to get started</p>
                         <div class="flex flex-col sm:flex-row gap-2 justify-center">
-                            <a href="{{ route('rentals.create.server1') }}" title="{{ __('Server 1') }}" class="min-h-[48px] px-4 py-3 rounded-xl bg-mint-500 hover:bg-mint-600 text-white font-semibold inline-flex items-center justify-center transition">SV1</a>
-                            <a href="{{ route('rentals.create.server2') }}" title="{{ __('Server 2') }}" class="min-h-[48px] px-4 py-3 rounded-xl bg-slate-600 hover:bg-slate-700 text-white font-semibold inline-flex items-center justify-center transition">SV2</a>
-                            <a href="{{ route('rentals.create.server3') }}" title="{{ __('Server 3') }} — US only" class="relative min-h-[48px] px-4 py-3 rounded-xl bg-slate-600 hover:bg-slate-700 text-white font-semibold inline-flex items-center justify-center transition">
-                                <span class="absolute -top-0.5 -right-0.5 inline-flex px-1 py-0.5 rounded text-[9px] font-semibold leading-none bg-sky-500 text-white shadow-sm">US only</span>
-                                SV3
+                            <a href="{{ route('rentals.create.server1') }}" title="{{ __('Server 1') }} — US numbers" class="relative min-h-[48px] px-4 py-3 rounded-xl bg-mint-500 hover:bg-mint-600 text-white font-semibold inline-flex items-center justify-center transition">
+                                <span class="absolute -top-1 -right-1 flex flex-col gap-0.5 items-end pointer-events-none">
+                                    <span class="inline-flex px-1 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-400 text-amber-950 shadow-sm">Rec</span>
+                                    <span class="inline-flex px-1 py-0.5 rounded text-[9px] font-semibold bg-sky-500 text-white shadow-sm">US only</span>
+                                </span>
+                                SV1
                             </a>
+                            <a href="{{ route('rentals.create.server2') }}" title="{{ __('Server 2') }}" class="min-h-[48px] px-4 py-3 rounded-xl bg-slate-600 hover:bg-slate-700 text-white font-semibold inline-flex items-center justify-center transition">SV2</a>
+                            <a href="{{ route('rentals.create.server3') }}" title="{{ __('Server 3') }}" class="min-h-[48px] px-4 py-3 rounded-xl bg-slate-600 hover:bg-slate-700 text-white font-semibold inline-flex items-center justify-center transition">SV3</a>
                         </div>
                     </div>
                 @endforelse
@@ -294,12 +299,15 @@
                                         <p class="text-slate-600 dark:text-slate-400 font-medium mb-2">No rentals yet</p>
                                         <p class="text-sm text-slate-500 dark:text-slate-500 mb-3">Rent a number to get started.</p>
                                         <div class="flex flex-wrap gap-2 justify-center">
-                                            <a href="{{ route('rentals.create.server1') }}" title="{{ __('Server 1') }}" class="px-3 sm:px-4 py-2 rounded-xl bg-mint-500 hover:bg-mint-600 text-white text-sm font-semibold transition">SV1</a>
-                                            <a href="{{ route('rentals.create.server2') }}" title="{{ __('Server 2') }}" class="px-3 sm:px-4 py-2 rounded-xl bg-slate-600 hover:bg-slate-700 text-white text-sm font-semibold transition">SV2</a>
-                                            <a href="{{ route('rentals.create.server3') }}" title="{{ __('Server 3') }} — US only" class="relative px-3 sm:px-4 py-2 rounded-xl bg-slate-600 hover:bg-slate-700 text-white text-sm font-semibold transition inline-flex items-center justify-center">
-                                                <span class="absolute -top-0.5 -right-0.5 inline-flex px-1 py-0.5 rounded text-[8px] sm:text-[9px] font-semibold leading-none bg-sky-500 text-white shadow-sm">US only</span>
-                                                SV3
+                                            <a href="{{ route('rentals.create.server1') }}" title="{{ __('Server 1') }} — US numbers" class="relative px-3 sm:px-4 py-2 rounded-xl bg-mint-500 hover:bg-mint-600 text-white text-sm font-semibold transition inline-flex items-center justify-center">
+                                                <span class="absolute -top-1 -right-1 flex flex-col gap-0.5 items-end pointer-events-none">
+                                                    <span class="inline-flex px-1 py-0.5 rounded text-[8px] font-bold uppercase bg-amber-400 text-amber-950 shadow-sm">Rec</span>
+                                                    <span class="inline-flex px-1 py-0.5 rounded text-[8px] font-semibold bg-sky-500 text-white shadow-sm">US only</span>
+                                                </span>
+                                                SV1
                                             </a>
+                                            <a href="{{ route('rentals.create.server2') }}" title="{{ __('Server 2') }}" class="px-3 sm:px-4 py-2 rounded-xl bg-slate-600 hover:bg-slate-700 text-white text-sm font-semibold transition">SV2</a>
+                                            <a href="{{ route('rentals.create.server3') }}" title="{{ __('Server 3') }}" class="px-3 sm:px-4 py-2 rounded-xl bg-slate-600 hover:bg-slate-700 text-white text-sm font-semibold transition">SV3</a>
                                         </div>
                                     </div>
                                 </td>

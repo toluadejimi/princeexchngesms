@@ -25,7 +25,7 @@ class RentalService
         $server = ApiServer::active()->findOrFail($serverId);
 
         $apiUsd = $this->pricing->getApiPriceUsd($serverId, $countryCode, $serviceCode);
-        if ($apiUsd <= 0 && $server->isMultiCountry() && !empty($options['country_id']) && method_exists(SmsServerFactory::make($server), 'getPrice')) {
+        if ($apiUsd <= 0 && $server->isMultiCountry() && ! empty($options['country_id']) && method_exists(SmsServerFactory::make($server), 'getPrice')) {
             $client = SmsServerFactory::make($server);
             $result = $client->getPrice((int) $options['country_id'], (int) $serviceCode, isset($options['pool_id']) && $options['pool_id'] !== '' ? (int) $options['pool_id'] : null);
             $apiUsd = (float) ($result['price'] ?? 0);

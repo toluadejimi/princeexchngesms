@@ -14,6 +14,7 @@ class SmsServerFactory
             'smsconfirmed' => new SmsConfirmedService($model),
             'multi_country' => new MultiCountrySmsService($model),
             'getatext' => new GetatextSmsService($model),
+            'fivesim' => new FiveSimSmsService($model),
             default => throw new \InvalidArgumentException('Unknown SMS server type: ' . $model->type),
         };
     }

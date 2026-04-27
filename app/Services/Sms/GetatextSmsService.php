@@ -10,11 +10,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Getatext API (Server 3) – USA-focused SMS rentals.
- * Base: https://getatext.com
- * Auth: `Auth: YOUR_API_KEY` header on all requests.
- *
- * @see https://getatext.com API docs
+ * US-numbers upstream API (internal type: getatext). Auth: `Auth` header + base URL from admin.
  */
 class GetatextSmsService implements SmsServerInterface
 {
@@ -54,6 +50,16 @@ class GetatextSmsService implements SmsServerInterface
         ];
     }
 
+    protected function httpTimeout(): int
+    {
+        return max(15, (int) config('services.getatext.timeout', 60));
+    }
+
+    protected function httpConnectTimeout(): int
+    {
+        return max(5, (int) config('services.getatext.connect_timeout', 25));
+    }
+
     /**
      * @param  array<string, mixed>|null  $json  Request body for POST
      * @return array<string, mixed>
@@ -62,7 +68,10 @@ class GetatextSmsService implements SmsServerInterface
     {
         $url = $this->baseUrl . $path;
         $start = microtime(true);
-        $response = Http::timeout(45)->withHeaders($this->authHeaders())->post($url, $json ?? []);
+        $response = Http::timeout($this->httpTimeout() + 30)
+            ->connectTimeout($this->httpConnectTimeout())
+            ->withHeaders($this->authHeaders())
+            ->post($url, $json ?? []);
         $duration = (microtime(true) - $start) * 1000;
 
         if (config('app.log_api_requests', false)) {
@@ -86,7 +95,7 @@ class GetatextSmsService implements SmsServerInterface
         }
 
         if (!is_array($data)) {
-            throw new \RuntimeException('Invalid JSON from Getatext API');
+            throw new \RuntimeException('Invalid response from service.');
         }
 
         if (isset($data['errors']) && $data['errors'] !== null && $data['errors'] !== '' && (string) $data['errors'] !== 'null') {
@@ -104,7 +113,10 @@ class GetatextSmsService implements SmsServerInterface
     {
         $url = $this->baseUrl . $path;
         $start = microtime(true);
-        $response = Http::timeout(30)->withHeaders($this->authHeadersForGet())->get($url);
+        $response = Http::timeout($this->httpTimeout())
+            ->connectTimeout($this->httpConnectTimeout())
+            ->withHeaders($this->authHeadersForGet())
+            ->get($url);
         $duration = (microtime(true) - $start) * 1000;
 
         if (config('app.log_api_requests', false)) {
@@ -130,12 +142,12 @@ class GetatextSmsService implements SmsServerInterface
         $body = $response->body();
         $trim = trim($body);
         if ($trim === '') {
-            throw new \RuntimeException('Empty response from Getatext API');
+            throw new \RuntimeException('Empty response from service.');
         }
 
         $data = json_decode($body, true);
         if (!is_array($data)) {
-            throw new \RuntimeException('Invalid JSON from Getatext API: ' . substr($trim, 0, 120));
+            throw new \RuntimeException('Invalid response from service.');
         }
 
         // List at root [{...}, ...] — valid; object with errors — check below
@@ -180,7 +192,7 @@ class GetatextSmsService implements SmsServerInterface
                 $raw = $this->get('/api/v1/prices-info', 'prices-info');
                 $services = $this->extractServicesFromPricesPayload($raw);
                 if (empty($services)) {
-                    Log::warning('Getatext prices-info returned no parseable services', [
+                    Log::warning('US slot prices-info returned no parseable services', [
                         'server_id' => $this->server->id,
                         'keys' => is_array($raw) ? array_keys($raw) : [],
                     ]);
@@ -189,7 +201,7 @@ class GetatextSmsService implements SmsServerInterface
                 return $services;
             });
         } catch (\Throwable $e) {
-            Log::error('Getatext getServices failed', [
+            Log::error('US slot getServices failed', [
                 'server_id' => $this->server->id,
                 'message' => $e->getMessage(),
             ]);
@@ -433,13 +445,13 @@ class GetatextSmsService implements SmsServerInterface
         if ($status !== '' && $status !== 'success') {
             $err = $data['errors'] ?? $data['message'] ?? $data['error'] ?? json_encode($data);
             $errStr = is_string($err) ? $err : json_encode($err);
-            throw new \RuntimeException('Getatext: ' . $errStr);
+            throw new \RuntimeException($errStr ?: 'Unable to complete order. Please try again.');
         }
 
         $orderId = (string) ($data['id'] ?? $data['rental_id'] ?? $data['order_id'] ?? '');
         $phone = (string) ($data['number'] ?? $data['phone'] ?? $data['phone_number'] ?? '');
         if ($orderId === '' || $phone === '') {
-            Log::warning('Getatext rent-a-number unexpected shape', ['keys' => array_keys($data), 'server_id' => $this->server->id]);
+            Log::warning('US slot rent-a-number unexpected shape', ['keys' => array_keys($data), 'server_id' => $this->server->id]);
             throw new \RuntimeException('Order failed: missing id or number in provider response.');
         }
 
@@ -496,7 +508,7 @@ class GetatextSmsService implements SmsServerInterface
         try {
             $data = $this->post('/api/v1/rental-status', ['id' => (int) $orderId], 'rental-status');
         } catch (\Throwable $e) {
-            Log::warning('Getatext rental-status failed', ['order_id' => $orderId, 'message' => $e->getMessage()]);
+            Log::warning('US slot rental-status failed', ['order_id' => $orderId, 'message' => $e->getMessage()]);
 
             return ['status' => 'wait', 'code' => null];
         }
@@ -525,7 +537,7 @@ class GetatextSmsService implements SmsServerInterface
 
             return $st === 'cancelled' || $st === 'canceled';
         } catch (\Throwable $e) {
-            Log::warning('Getatext cancel failed', ['order_id' => $orderId, 'message' => $e->getMessage()]);
+            Log::warning('US slot cancel failed', ['order_id' => $orderId, 'message' => $e->getMessage()]);
 
             return false;
         }

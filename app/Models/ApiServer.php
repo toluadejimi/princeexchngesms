@@ -72,18 +72,27 @@ class ApiServer extends Model
         return $this->type === 'getatext';
     }
 
-    /** Customer-facing label: Server 1 for smsconfirmed, Server 2 for multi_country, Server 3 for getatext, else name or sort. */
+    public function isFiveSim(): bool
+    {
+        return $this->type === 'fivesim';
+    }
+
+    /** Customer-facing label only (no provider branding). */
     public function getDisplayNameAttribute(): string
     {
-        if ($this->type === 'smsconfirmed') {
+        if ($this->type === 'getatext') {
             return 'Server 1';
         }
         if ($this->type === 'multi_country') {
             return 'Server 2';
         }
-        if ($this->type === 'getatext') {
+        if ($this->type === 'fivesim') {
             return 'Server 3';
         }
+        if ($this->type === 'smsconfirmed') {
+            return $this->name ?: 'Server';
+        }
+
         return $this->name ?: ('Server ' . ($this->sort_order ?: 1));
     }
 

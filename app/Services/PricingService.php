@@ -42,8 +42,19 @@ class PricingService
                 $countryId = (int) $countryCode;
                 if ($countryId > 0) {
                     $result = $client->getPriceForCountry($serviceCode, $countryId);
+
                     return (float) ($result['price'] ?? 0);
                 }
+            }
+            if ($server->isFiveSim()) {
+                $services = $client->getServices($countryCode);
+                foreach ($services as $s) {
+                    if (($s['code'] ?? '') === $serviceCode) {
+                        return (float) ($s['price'] ?? 0);
+                    }
+                }
+
+                return 0.0;
             }
             $services = $client->getServices($countryCode);
             foreach ($services as $s) {

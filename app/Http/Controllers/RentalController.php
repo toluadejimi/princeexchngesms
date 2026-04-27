@@ -25,30 +25,32 @@ class RentalController extends Controller
         return view('rentals.create', ['servers' => $servers]);
     }
 
-    /** Server 1 (SMSCONFIRMED) – with country selector. */
+    /** Server 1 – US-focused numbers. */
     public function createServer1(): View|\Illuminate\Http\RedirectResponse
     {
-        $server = ApiServer::active()->where('type', 'smsconfirmed')->first();
-        if (!$server) {
+        $server = ApiServer::active()->where('type', 'getatext')->first();
+        if (! $server) {
             return redirect()->route('dashboard')->with('error', 'Server 1 is not available at the moment.');
         }
+
         return view('rentals.create-single', array_merge($this->priceSettings(), [
             'server' => $server,
             'showCountry' => true,
             'title' => 'Server 1',
-            'subtitle' => 'Rent a number for WhatsApp, Telegram, Google, and more.',
+            'subtitle' => 'Rent a USA number. WhatsApp, Telegram, and more.',
             'otherServerRoute' => route('rentals.create.server2'),
             'otherServerLabel' => 'Server 2',
         ]));
     }
 
-    /** Server 2 (multi-country) – with country selector. */
+    /** Server 2 – many countries. */
     public function createServer2(): View|\Illuminate\Http\RedirectResponse
     {
         $server = ApiServer::active()->where('type', 'multi_country')->first();
-        if (!$server) {
+        if (! $server) {
             return redirect()->route('dashboard')->with('error', 'Server 2 is not available at the moment.');
         }
+
         return view('rentals.create-single', array_merge($this->priceSettings(), [
             'server' => $server,
             'showCountry' => true,
@@ -59,18 +61,19 @@ class RentalController extends Controller
         ]));
     }
 
-    /** Server 3 (Getatext) – USA numbers via Getatext API. */
+    /** Server 3 – worldwide numbers. */
     public function createServer3(): View|\Illuminate\Http\RedirectResponse
     {
-        $server = ApiServer::active()->where('type', 'getatext')->first();
-        if (!$server) {
+        $server = ApiServer::active()->where('type', 'fivesim')->first();
+        if (! $server) {
             return redirect()->route('dashboard')->with('error', 'Server 3 is not available at the moment.');
         }
+
         return view('rentals.create-single', array_merge($this->priceSettings(), [
             'server' => $server,
             'showCountry' => true,
             'title' => 'Server 3',
-            'subtitle' => 'Rent a USA number. WhatsApp, Telegram, and more.',
+            'subtitle' => 'Rent a number worldwide. WhatsApp, Telegram, and more.',
             'otherServerRoute' => route('rentals.create.server2'),
             'otherServerLabel' => 'Server 2',
         ]));
@@ -111,21 +114,21 @@ class RentalController extends Controller
 
         $server = ApiServer::active()->findOrFail($validated['server_id']);
         $countryCode = $validated['country_code'] ?? '';
-        if (!$countryCode) {
+        if (! $countryCode) {
             return response()->json(['message' => 'Please select a country.'], 422);
         }
 
         $options = [];
-        if (!empty($validated['areas'])) {
+        if (! empty($validated['areas'])) {
             $options['areas'] = $validated['areas'];
         }
-        if (!empty($validated['carriers'])) {
+        if (! empty($validated['carriers'])) {
             $options['carriers'] = $validated['carriers'];
         }
-        if (!empty($validated['number'])) {
+        if (! empty($validated['number'])) {
             $options['number'] = $validated['number'];
         }
-        if (!empty($validated['pool_id'])) {
+        if (! empty($validated['pool_id'])) {
             if ($server->isSmsConfirmed() || $server->isGetatext()) {
                 $options['operator'] = $validated['pool_id'];
             } else {
@@ -213,12 +216,12 @@ class RentalController extends Controller
         ]);
     }
 
-    /** Other Countries (SMSPool) only: resend SMS for this order */
+    /** Server 2 (multi_country) only: resend SMS for this order */
     public function resend(int $id, Request $request): JsonResponse|RedirectResponse
     {
         $rental = \App\Models\Rental::where('user_id', $request->user()->id)->findOrFail($id);
-        if (!$rental->server || !$rental->server->isMultiCountry()) {
-            $msg = 'Resend is only available for Other Countries rentals.';
+        if (! $rental->server || ! $rental->server->isMultiCountry()) {
+            $msg = 'Resend is only available for Server 2 rentals.';
             return $request->expectsJson() ? response()->json(['message' => $msg], 422) : redirect()->route('dashboard')->with('error', $msg);
         }
         try {
@@ -236,12 +239,12 @@ class RentalController extends Controller
         }
     }
 
-    /** Other Countries (SMSPool) only: activate SMS for this order */
+    /** Server 2 (multi_country) only: activate SMS for this order */
     public function activate(int $id, Request $request): JsonResponse|RedirectResponse
     {
         $rental = \App\Models\Rental::where('user_id', $request->user()->id)->findOrFail($id);
-        if (!$rental->server || !$rental->server->isMultiCountry()) {
-            $msg = 'Activate is only available for Other Countries rentals.';
+        if (! $rental->server || ! $rental->server->isMultiCountry()) {
+            $msg = 'Activate is only available for Server 2 rentals.';
             return $request->expectsJson() ? response()->json(['message' => $msg], 422) : redirect()->route('dashboard')->with('error', $msg);
         }
         try {
@@ -259,12 +262,12 @@ class RentalController extends Controller
         }
     }
 
-    /** Other Countries (SMSPool) only: reactivate SMS for this order */
+    /** Server 2 (multi_country) only: reactivate SMS for this order */
     public function reactivate(int $id, Request $request): JsonResponse|RedirectResponse
     {
         $rental = \App\Models\Rental::where('user_id', $request->user()->id)->findOrFail($id);
-        if (!$rental->server || !$rental->server->isMultiCountry()) {
-            $msg = 'Reactivate is only available for Other Countries rentals.';
+        if (! $rental->server || ! $rental->server->isMultiCountry()) {
+            $msg = 'Reactivate is only available for Server 2 rentals.';
             return $request->expectsJson() ? response()->json(['message' => $msg], 422) : redirect()->route('dashboard')->with('error', $msg);
         }
         try {
@@ -294,7 +297,7 @@ class RentalController extends Controller
     public function countries(Request $request): JsonResponse
     {
         $serverId = (int) $request->query('server_id');
-        \Illuminate\Support\Facades\Log::info('Other Countries: countries requested', [
+        \Illuminate\Support\Facades\Log::info('Rental countries: requested', [
             'server_id' => $serverId,
             'user_id' => $request->user()?->id,
         ]);
@@ -310,7 +313,7 @@ class RentalController extends Controller
             }
         } catch (\Throwable $e) {
             $failureReason = 'Exception: ' . $e->getMessage();
-            \Illuminate\Support\Facades\Log::warning('Other Countries: countries fetch failed', [
+            \Illuminate\Support\Facades\Log::warning('Rental countries: fetch failed', [
                 'server_id' => $serverId,
                 'server_name' => $server->name,
                 'exception' => get_class($e),
@@ -327,7 +330,7 @@ class RentalController extends Controller
         }
 
         if (empty($countries) && ($server->isMultiCountry() || $server->isSmsConfirmed())) {
-            \Illuminate\Support\Facades\Log::info('Other Countries: using fallback country list', [
+            \Illuminate\Support\Facades\Log::info('Rental countries: using fallback list', [
                 'server_id' => $serverId,
                 'reason' => $failureReason ?? 'empty',
                 'fallback_count' => count(self::fallbackCountries()),
@@ -335,7 +338,7 @@ class RentalController extends Controller
             $countries = self::fallbackCountries();
         }
 
-        \Illuminate\Support\Facades\Log::info('Other Countries: returning countries', [
+        \Illuminate\Support\Facades\Log::info('Rental countries: returning', [
             'server_id' => $serverId,
             'count' => count($countries),
         ]);
@@ -352,18 +355,29 @@ class RentalController extends Controller
             'pool_id' => 'nullable|string|max:20',
         ]);
         $server = ApiServer::active()->findOrFail((int) $request->query('server_id'));
-        $countryId = (int) $request->query('country_id');
+        $countryRef = $request->query('country_id');
         $serviceCode = (string) $request->query('service_code');
 
         try {
             $client = \App\Services\Sms\SmsServerFactory::make($server);
             if ($server->isSmsConfirmed() || $server->isGetatext()) {
-                $result = $client->getPriceForCountry($serviceCode, $countryId);
+                $result = $client->getPriceForCountry($serviceCode, (int) $countryRef);
             } elseif ($server->isMultiCountry()) {
                 $serviceId = (int) $serviceCode;
                 $poolId = $request->query('pool_id');
                 $poolIdInt = $poolId !== null && $poolId !== '' ? (int) $poolId : null;
-                $result = $client->getPrice($countryId, $serviceId, $poolIdInt);
+                $result = $client->getPrice((int) $countryRef, $serviceId, $poolIdInt);
+            } elseif ($server->isFiveSim()) {
+                $slug = (string) $countryRef;
+                $services = $client->getServices($slug);
+                $priceUsd = 0.0;
+                foreach ($services as $s) {
+                    if ((string) ($s['code'] ?? '') === $serviceCode) {
+                        $priceUsd = (float) ($s['price'] ?? 0);
+                        break;
+                    }
+                }
+                $result = ['price' => $priceUsd, 'success_rate' => 0];
             } else {
                 return response()->json(['message' => 'Price not available for this server.'], 422);
             }
@@ -396,7 +410,7 @@ class RentalController extends Controller
         ]);
     }
 
-    /** Pools for Server 2 (SMSPool). Operators for Server 1 (SMSCONFIRMED) – require country_id for Server 1. */
+    /** Pools for Server 2. Operators for legacy / US slots – may require country_id. */
     public function pools(Request $request): JsonResponse
     {
         $serverId = (int) $request->query('server_id');
@@ -412,11 +426,16 @@ class RentalController extends Controller
             }
             if ($server->isMultiCountry()) {
                 $pools = method_exists($client, 'getPools') ? $client->getPools() : [];
+
                 return response()->json(['pools' => $pools]);
+            }
+            if ($server->isFiveSim()) {
+                return response()->json(['pools' => []]);
             }
         } catch (\Throwable $e) {
             // fall through
         }
+
         return response()->json(['pools' => []]);
     }
 

@@ -39,4 +39,10 @@ return [
         'key' => env('SPRINTPAY_KEY'),  // generate-virtual-account API + payment redirect URL
     ],
 
+    /** HTTP client limits for US-numbers upstream (getatext); raise if you see cURL error 28 timeouts. */
+    'getatext' => [
+        'timeout' => (int) env('GETATEXT_HTTP_TIMEOUT', 60),
+        'connect_timeout' => (int) env('GETATEXT_HTTP_CONNECT_TIMEOUT', 25),
+    ],
+
 ];

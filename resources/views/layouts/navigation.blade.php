@@ -22,20 +22,18 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="!px-2.5 lg:!px-3 shrink-0 whitespace-nowrap text-xs lg:text-sm">
                         {{ __('Dashboard') }}
                     </x-nav-link>
-                    <x-nav-link :href="route('rentals.create.server1')" :active="request()->routeIs('rentals.create.server1')" class="!px-2 lg:!px-2.5 shrink-0 whitespace-nowrap text-xs lg:text-sm" title="{{ __('Server 1') }}">
+                    <x-nav-link :href="route('rentals.create.server1')" :active="request()->routeIs('rentals.create.server1')" class="!px-2 lg:!px-2.5 shrink-0 whitespace-nowrap text-xs lg:text-sm" title="{{ __('Server 1') }} — US numbers">
                         <span class="inline-flex items-center gap-1">
                             <span class="inline-flex px-1 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-amber-400 text-amber-950 shrink-0">Rec</span>
+                            <span class="inline-flex px-1 py-0.5 rounded text-[9px] font-semibold leading-tight bg-sky-500 text-white shrink-0">US only</span>
                             <span>SV1</span>
                         </span>
                     </x-nav-link>
                     <x-nav-link :href="route('rentals.create.server2')" :active="request()->routeIs('rentals.create.server2')" class="!px-2.5 lg:!px-3 shrink-0 whitespace-nowrap text-xs lg:text-sm" title="{{ __('Server 2') }}">
                         SV2
                     </x-nav-link>
-                    <x-nav-link :href="route('rentals.create.server3')" :active="request()->routeIs('rentals.create.server3')" class="!px-2 lg:!px-2.5 shrink-0 whitespace-nowrap text-xs lg:text-sm" title="{{ __('Server 3') }} — US only">
-                        <span class="inline-flex items-center gap-1">
-                            <span class="inline-flex px-1 py-0.5 rounded text-[9px] font-semibold leading-tight bg-sky-500 text-white shrink-0">US only</span>
-                            <span>SV3</span>
-                        </span>
+                    <x-nav-link :href="route('rentals.create.server3')" :active="request()->routeIs('rentals.create.server3')" class="!px-2.5 lg:!px-3 shrink-0 whitespace-nowrap text-xs lg:text-sm" title="{{ __('Server 3') }}">
+                        SV3
                     </x-nav-link>
                     <x-nav-link :href="route('fund-wallet.index')" :active="request()->routeIs('fund-wallet.*')" class="!px-2.5 lg:!px-3 shrink-0 whitespace-nowrap text-xs lg:text-sm">
                         {{ __('Fund Wallet') }}
@@ -124,16 +122,13 @@
             <div class="py-3 px-3 space-y-1">
                 <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">{{ __('Dashboard') }}</x-responsive-nav-link>
                 {{-- Server 1: yellow Recommended + yellow bg (mobile only) --}}
-                <a href="{{ route('rentals.create.server1') }}" class="flex items-center gap-2 min-h-[48px] w-full px-4 py-3 rounded-xl text-base font-medium transition {{ request()->routeIs('rentals.create.server1') ? 'bg-amber-200 dark:bg-amber-900/50 text-amber-900 dark:text-amber-100 border border-amber-300 dark:border-amber-700' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800 hover:bg-amber-200/80 dark:hover:bg-amber-900/50' }}" title="{{ __('Server 1') }}">
+                <a href="{{ route('rentals.create.server1') }}" class="flex items-center gap-2 min-h-[48px] w-full px-4 py-3 rounded-xl text-base font-medium transition {{ request()->routeIs('rentals.create.server1') ? 'bg-amber-200 dark:bg-amber-900/50 text-amber-900 dark:text-amber-100 border border-amber-300 dark:border-amber-700' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800 hover:bg-amber-200/80 dark:hover:bg-amber-900/50' }}" title="{{ __('Server 1') }} — US numbers">
                     <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-400 dark:bg-amber-500 text-amber-950 shrink-0">Rec</span>
+                    <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-500 text-white shrink-0">US only</span>
                     <span>SV1</span>
                 </a>
                 <x-responsive-nav-link :href="route('rentals.create.server2')" :active="request()->routeIs('rentals.create.server2')" title="{{ __('Server 2') }}">SV2</x-responsive-nav-link>
-                @php $sv3NavActive = request()->routeIs('rentals.create.server3'); @endphp
-                <a href="{{ route('rentals.create.server3') }}" class="flex items-center gap-2 min-h-[48px] w-full px-4 py-3 rounded-xl text-base font-medium focus:outline-none focus:ring-2 transition {{ $sv3NavActive ? 'text-mint-700 dark:text-mint-200 bg-mint-50 dark:bg-mint-900/40 border border-mint-200 dark:border-mint-700 focus:ring-mint-500/50' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 focus:ring-slate-400/30' }}" title="{{ __('Server 3') }} — US only">
-                    <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-500 text-white shrink-0">US only</span>
-                    <span>SV3</span>
-                </a>
+                <x-responsive-nav-link :href="route('rentals.create.server3')" :active="request()->routeIs('rentals.create.server3')" title="{{ __('Server 3') }}">SV3</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('fund-wallet.index')" :active="request()->routeIs('fund-wallet.*')">{{ __('Fund Wallet') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('support.index')" :active="request()->routeIs('support.*')">{{ __('Support') }}</x-responsive-nav-link>
                 @if(auth()->user()?->is_admin)

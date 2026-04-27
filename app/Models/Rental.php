@@ -76,7 +76,7 @@ class Rental extends Model
         return in_array($this->status, [self::STATUS_PENDING, self::STATUS_ACTIVE], true);
     }
 
-    /** For Server 1: cancel is allowed only 10 minutes after creation. Server 3 (Getatext): 1 minute per provider. */
+    /** Legacy slot: cancel after 10 minutes. US slot (getatext): 1 minute. Worldwide slot (fivesim): 3 minutes. */
     public function cancelAllowedAt(): ?\Carbon\Carbon
     {
         if (!$this->relationLoaded('server')) {
@@ -88,6 +88,10 @@ class Rental extends Model
         if ($this->server && $this->server->isGetatext() && $this->created_at) {
             return $this->created_at->copy()->addMinute();
         }
+        if ($this->server && $this->server->isFiveSim() && $this->created_at) {
+            return $this->created_at->copy()->addMinutes(3);
+        }
+
         return null;
     }
 
@@ -123,11 +127,12 @@ class Rental extends Model
                 // fall through to default
             }
         }
-        if ($this->server && $this->server->isGetatext()) {
+        if ($this->server && ($this->server->isGetatext() || $this->server->isFiveSim())) {
             try {
                 $client = \App\Services\Sms\SmsServerFactory::make($this->server);
                 if (method_exists($client, 'getServices')) {
-                    $services = $client->getServices(null);
+                    $cc = $this->server->isFiveSim() ? (string) ($this->country_code ?? '') : null;
+                    $services = $client->getServices($cc);
                     foreach ($services as $s) {
                         if (($s['code'] ?? '') === (string) $code) {
                             return $s['name'] ?? ucfirst((string) $code);
@@ -138,6 +143,7 @@ class Rental extends Model
                 // fall through
             }
         }
+
         return \App\Helpers\DisplayHelper::serviceCodeToName($code);
     }
 

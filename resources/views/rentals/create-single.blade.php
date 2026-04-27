@@ -143,6 +143,7 @@
                             </div>
                         </div>
                     </section>
+                    @if(($server->type ?? '') !== 'fivesim')
                     <section class="space-y-2">
                         <label class="block text-sm font-semibold text-slate-800 dark:text-slate-200" x-text="(serverType === 'smsconfirmed' || serverType === 'getatext') ? 'Operator (optional)' : 'Pool (optional)'"></label>
                         <p x-show="poolsLoading" class="text-sm text-slate-500 dark:text-slate-400" x-text="(serverType === 'smsconfirmed' || serverType === 'getatext') ? 'Loading operators...' : 'Loading pools...'"></p>
@@ -150,6 +151,7 @@
                             <option value="" x-text="(serverType === 'smsconfirmed' || serverType === 'getatext') ? 'No preference (any operator)' : 'No preference (any pool)'"></option>
                         </select>
                     </section>
+                    @endif
                     {{-- Live price & success rate (Other Countries) --}}
                     <div x-show="showCountry && (priceLoading || priceNgn > 0 || priceUsd > 0 || successRate > 0)" class="rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/60 p-4 sm:p-5">
                         <p x-show="priceLoading" class="text-sm text-slate-500 dark:text-slate-400">Checking price...</p>
@@ -277,7 +279,7 @@
                     }
                     if (this.showCountry) {
                         this.loadCountries();
-                        if (this.serverType !== 'smsconfirmed' && this.serverType !== 'getatext') this.loadPools();
+                        if (this.serverType === 'multi_country') this.loadPools();
                     } else {
                         this.countryCode = 'US';
                         this.loadServices();
@@ -290,7 +292,7 @@
                     this.poolId = '';
                     this.loadServices();
                     this.loadPrice();
-                    this.loadPools();
+                    if (this.serverType === 'multi_country') this.loadPools();
                 },
                 selectServiceOther(s) {
                     this.serviceCode = s.code;

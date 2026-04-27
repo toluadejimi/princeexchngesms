@@ -20,7 +20,7 @@ class SettingsController extends Controller
         $server2Balance = null;
         $server2Error = null;
 
-        $server1 = ApiServer::active()->where('type', 'smsconfirmed')->first();
+        $server1 = ApiServer::active()->where('type', 'getatext')->first();
         if ($server1) {
             try {
                 $client = SmsServerFactory::make($server1);
@@ -46,7 +46,7 @@ class SettingsController extends Controller
 
         $server3Balance = null;
         $server3Error = null;
-        $server3 = ApiServer::active()->where('type', 'getatext')->first();
+        $server3 = ApiServer::active()->where('type', 'fivesim')->first();
         if ($server3) {
             try {
                 $client = SmsServerFactory::make($server3);

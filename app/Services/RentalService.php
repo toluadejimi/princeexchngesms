@@ -199,6 +199,12 @@ class RentalService
                 'status' => Rental::STATUS_COMPLETED,
             ]);
         } elseif ($result['status'] === 'cancel') {
+            $rental->loadMissing('server');
+            // Worldwide slot (5sim): provider may mark TIMEOUT/CANCELED before the user can cancel.
+            // Keep the rental active so the user can use Cancel (refunded) or wait until expires_at (expired + refund).
+            if ($rental->server?->isFiveSim()) {
+                return;
+            }
             $rental->update(['status' => Rental::STATUS_CANCELLED]);
         }
     }

@@ -13,10 +13,25 @@ use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request, RentalService $rentalService): View
+    public function index(Request $request): View
+    {
+        $showLoginPopup = $request->session()->get('show_login_popup', false) && SiteSetting::loginPopupEnabled()
+            && (SiteSetting::loginPopupTitle() !== '' || SiteSetting::loginPopupMessage() !== '');
+
+        return view('dashboard.index', [
+            'user' => $request->user(),
+            'lazyDashboard' => true,
+            'showLoginPopup' => $showLoginPopup,
+            'loginPopupTitle' => SiteSetting::loginPopupTitle(),
+            'loginPopupMessage' => SiteSetting::loginPopupMessage(),
+        ]);
+    }
+
+    public function data(Request $request, RentalService $rentalService): JsonResponse
     {
         $user = $request->user();
         $rentalService->expireOverdueRentalsForUser($user->id);
+
         $query = Rental::where('user_id', $user->id)->with('server')->latest();
         if ($request->filled('server')) {
             $query->where('server_id', $request->query('server'));
@@ -24,25 +39,21 @@ class DashboardController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->query('status'));
         }
-        $rentals = $query->paginate(15)->withQueryString();
 
-        $activeCount = Rental::where('user_id', $user->id)->active()->count();
-        $servers = ApiServer::active()->orderBy('sort_order')->get();
-        $unreadNotificationCount = AppNotification::whereDoesntHave('reads', fn ($q) => $q->where('user_id', $user->id)->whereNotNull('read_at'))->count();
+        $rentals = $query->paginate(15)
+            ->withPath(route('dashboard'))
+            ->withQueryString();
 
-        $showLoginPopup = $request->session()->get('show_login_popup', false) && SiteSetting::loginPopupEnabled()
-            && (SiteSetting::loginPopupTitle() !== '' || SiteSetting::loginPopupMessage() !== '');
-
-        return view('dashboard.index', [
+        $html = view('dashboard.partials.lazy-content', [
             'user' => $user,
             'rentals' => $rentals,
-            'activeCount' => $activeCount,
-            'servers' => $servers,
-            'unreadNotificationCount' => $unreadNotificationCount,
-            'showLoginPopup' => $showLoginPopup,
-            'loginPopupTitle' => SiteSetting::loginPopupTitle(),
-            'loginPopupMessage' => SiteSetting::loginPopupMessage(),
-        ]);
+            'activeCount' => Rental::where('user_id', $user->id)->active()->count(),
+            'servers' => ApiServer::active()->orderBy('sort_order')->get(),
+            'unreadNotificationCount' => AppNotification::whereDoesntHave('reads', fn ($q) => $q->where('user_id', $user->id)->whereNotNull('read_at'))->count(),
+        ])->render();
+
+        return response()->json(['html' => $html])
+            ->header('Cache-Control', 'private, max-age=15, stale-while-revalidate=30');
     }
 
     /** Dismiss the login popup for this session (user clicked Disable/Close). */

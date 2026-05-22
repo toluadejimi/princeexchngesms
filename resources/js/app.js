@@ -231,6 +231,46 @@ Alpine.data('loginPopup', (dismissUrl, csrf) => ({
     },
 }));
 
+Alpine.data('dashboardLazy', (dataUrl) => ({
+    dataUrl,
+    loading: false,
+    loaded: false,
+    html: '',
+    errorMessage: '',
+    async load() {
+        this.loading = true;
+        this.loaded = false;
+        this.errorMessage = '';
+
+        try {
+            const url = new URL(this.dataUrl, window.location.origin);
+            url.search = window.location.search;
+
+            const response = await fetch(url.toString(), {
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            if (!response.ok) throw new Error('Dashboard request failed.');
+
+            const data = await response.json();
+            this.html = data.html || '';
+            this.loaded = true;
+
+            this.$nextTick(() => {
+                if (this.$refs.content) Alpine.initTree(this.$refs.content);
+            });
+        } catch (_) {
+            this.errorMessage = 'Could not load dashboard information. Please try again.';
+        } finally {
+            this.loading = false;
+        }
+    },
+}));
+
 Alpine.data('cancelCountdown', (allowedAtIso) => ({
     allowedAtIso,
     label: 'Cancel in 10:00',

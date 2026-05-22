@@ -23,6 +23,10 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
+Route::get('/api/dashboard-data', [DashboardController::class, 'data'])
+    ->middleware(['auth', 'verified'])
+    ->name('api.dashboard.data');
+
 Route::middleware('auth')->group(function () {
     Route::get('/fund-wallet', [FundWalletController::class, 'index'])->name('fund-wallet.index');
     Route::post('/generate-account', [FundWalletController::class, 'generateAccount'])->name('fund-wallet.generate');

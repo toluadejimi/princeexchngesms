@@ -68,6 +68,48 @@
                 {{ session('error') }}
             </div>
         @endif
+        @if($lazyDashboard ?? false)
+            <div x-data="dashboardLazy('{{ route('api.dashboard.data') }}')" x-init="load()" class="space-y-5 sm:space-y-6">
+                <div x-show="loading" class="space-y-5 sm:space-y-6" aria-live="polite">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                        @for($i = 0; $i < 3; $i++)
+                            <div class="rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-5 sm:p-6">
+                                <div class="flex items-center gap-3 animate-pulse">
+                                    <div class="w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-800"></div>
+                                    <div class="flex-1 space-y-3">
+                                        <div class="h-3 w-24 rounded bg-slate-200 dark:bg-slate-800"></div>
+                                        <div class="h-7 w-32 rounded bg-slate-200 dark:bg-slate-800"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endfor
+                    </div>
+                    <div class="rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 overflow-hidden">
+                        <div class="px-4 sm:px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                            <div class="h-5 w-24 rounded bg-slate-200 dark:bg-slate-800 animate-pulse"></div>
+                            <div class="mt-4 flex gap-2 overflow-hidden">
+                                @for($i = 0; $i < 5; $i++)
+                                    <div class="h-11 w-20 shrink-0 rounded-xl bg-slate-200 dark:bg-slate-800 animate-pulse"></div>
+                                @endfor
+                            </div>
+                        </div>
+                        <div class="p-4 sm:p-6 space-y-3">
+                            @for($i = 0; $i < 4; $i++)
+                                <div class="h-20 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse"></div>
+                            @endfor
+                        </div>
+                    </div>
+                    <p class="text-center text-sm text-slate-500 dark:text-slate-400">Loading dashboard information...</p>
+                </div>
+
+                <div x-show="errorMessage" x-cloak class="rounded-2xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 sm:px-5 py-3.5 text-red-800 dark:text-red-200 text-sm font-medium">
+                    <span x-text="errorMessage"></span>
+                    <button type="button" @click="load()" class="ml-2 underline font-semibold">Try again</button>
+                </div>
+
+                <div x-show="loaded" x-cloak x-ref="content" x-html="html"></div>
+            </div>
+        @else
         @if (isset($unreadNotificationCount) && $unreadNotificationCount > 0)
             <div class="rounded-2xl bg-mint-50 dark:bg-mint-900/20 border border-mint-200 dark:border-mint-800 px-4 sm:px-5 py-3.5 flex flex-wrap items-center justify-between gap-2" x-data="{ dismissed: false }" x-show="!dismissed">
                 <p class="text-mint-800 dark:text-mint-200 text-sm font-medium">
@@ -322,6 +364,7 @@
                 </div>
             @endif
         </div>
+        @endif
     </div>
     <script>
         function copyToClipboard(text, buttonEl) {

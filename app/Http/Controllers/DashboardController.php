@@ -32,12 +32,17 @@ class DashboardController extends Controller
         $user = $request->user();
         $rentalService->expireOverdueRentalsForUser($user->id);
 
+        $status = (string) $request->query('status', 'active');
         $query = Rental::where('user_id', $user->id)->with('server')->latest();
         if ($request->filled('server')) {
             $query->where('server_id', $request->query('server'));
         }
-        if ($request->filled('status')) {
-            $query->where('status', $request->query('status'));
+        if ($status === 'active') {
+            $query->active();
+        } elseif ($status === 'completed') {
+            $query->completed();
+        } elseif ($status !== 'all') {
+            $query->where('status', $status);
         }
 
         $rentals = $query->paginate(15)
@@ -48,6 +53,7 @@ class DashboardController extends Controller
             'user' => $user,
             'rentals' => $rentals,
             'activeCount' => Rental::where('user_id', $user->id)->active()->count(),
+            'currentStatus' => $status,
             'servers' => ApiServer::active()->orderBy('sort_order')->get(),
             'unreadNotificationCount' => AppNotification::whereDoesntHave('reads', fn ($q) => $q->where('user_id', $user->id)->whereNotNull('read_at'))->count(),
         ])->render();

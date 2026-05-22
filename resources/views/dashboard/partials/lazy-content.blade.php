@@ -47,10 +47,26 @@
                 <span class="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
                 </span>
-                <span class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Total Rentals</span>
+                <span class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                    @if(($currentStatus ?? 'active') === 'active')
+                        Active List
+                    @elseif(($currentStatus ?? 'active') === 'completed')
+                        Completed List
+                    @elseif(($currentStatus ?? 'active') === 'all')
+                        Total Rentals
+                    @else
+                        Filtered Rentals
+                    @endif
+                </span>
             </div>
             <p class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tabular-nums">{{ $rentals->total() }}</p>
-            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">all time</p>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                @if(($currentStatus ?? 'active') === 'all')
+                    all time
+                @else
+                    current filter
+                @endif
+            </p>
         </div>
     </div>
 </div>
@@ -59,7 +75,7 @@
     <div class="px-4 sm:px-6 py-4 border-b border-slate-200 dark:border-slate-700">
         <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Rentals</h2>
         <div class="flex items-center gap-2 overflow-x-auto overscroll-x-contain pb-1 -mx-1 sm:mx-0 sm:pb-0 sm:flex-wrap">
-            <a href="{{ route('dashboard', request()->except('server','status')) }}" class="shrink-0 min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-medium inline-flex items-center {{ !request('server') && !request('status') ? 'bg-mint-500 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700' }} transition">All</a>
+            <a href="{{ route('dashboard', ['status' => 'all'] + request()->except('status')) }}" class="shrink-0 min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-medium inline-flex items-center {{ ($currentStatus ?? 'active') === 'all' ? 'bg-mint-500 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700' }} transition">All</a>
             @foreach($servers as $s)
                 <a href="{{ route('dashboard', ['server' => $s->id] + request()->except('server')) }}" title="{{ $s->display_name }}" class="shrink-0 min-h-[44px] px-3 sm:px-4 py-2.5 rounded-xl text-sm font-semibold inline-flex items-center gap-1 {{ request('server') == $s->id ? 'bg-mint-500 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700' }} transition">
                     @if($s->type === 'getatext')
@@ -73,8 +89,8 @@
                     @endif
                 </a>
             @endforeach
-            <a href="{{ route('dashboard', ['status' => 'active'] + request()->except('status')) }}" class="shrink-0 min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-medium inline-flex items-center {{ request('status') === 'active' ? 'bg-mint-500 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700' }} transition">Active</a>
-            <a href="{{ route('dashboard', ['status' => 'completed'] + request()->except('status')) }}" class="shrink-0 min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-medium inline-flex items-center {{ request('status') === 'completed' ? 'bg-mint-500 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700' }} transition">Completed</a>
+            <a href="{{ route('dashboard', request()->except('status')) }}" class="shrink-0 min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-medium inline-flex items-center {{ ($currentStatus ?? 'active') === 'active' ? 'bg-mint-500 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700' }} transition">Active</a>
+            <a href="{{ route('dashboard', ['status' => 'completed'] + request()->except('status')) }}" class="shrink-0 min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-medium inline-flex items-center {{ ($currentStatus ?? 'active') === 'completed' ? 'bg-mint-500 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700' }} transition">Completed</a>
         </div>
     </div>
 
@@ -86,8 +102,24 @@
                 <div class="w-14 h-14 mx-auto rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500 mb-4">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                 </div>
-                <p class="text-slate-600 dark:text-slate-400 font-medium mb-1">No rentals yet</p>
-                <p class="text-sm text-slate-500 dark:text-slate-500 mb-4">Rent a number to get started</p>
+                <p class="text-slate-600 dark:text-slate-400 font-medium mb-1">
+                    @if(($currentStatus ?? 'active') === 'active')
+                        No active rentals
+                    @elseif(($currentStatus ?? 'active') === 'completed')
+                        No completed rentals
+                    @else
+                        No rentals yet
+                    @endif
+                </p>
+                <p class="text-sm text-slate-500 dark:text-slate-500 mb-4">
+                    @if(($currentStatus ?? 'active') === 'active')
+                        Active rentals will appear here.
+                    @elseif(($currentStatus ?? 'active') === 'completed')
+                        Completed, cancelled, and expired rentals will appear here.
+                    @else
+                        Rent a number to get started.
+                    @endif
+                </p>
                 <div class="flex flex-col sm:flex-row gap-2 justify-center">
                     <a href="{{ route('rentals.create.server1') }}" title="{{ __('Server 1') }} — US numbers" class="relative min-h-[48px] px-4 py-3 rounded-xl bg-mint-500 hover:bg-mint-600 text-white font-semibold inline-flex items-center justify-center transition">
                         <span class="absolute -top-1 -right-1 flex flex-col gap-0.5 items-end pointer-events-none">
@@ -225,8 +257,24 @@
                     <tr>
                         <td colspan="7" class="px-4 sm:px-6 py-12 text-center">
                             <div class="inline-block rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 px-8 py-6">
-                                <p class="text-slate-600 dark:text-slate-400 font-medium mb-2">No rentals yet</p>
-                                <p class="text-sm text-slate-500 dark:text-slate-500 mb-3">Rent a number to get started.</p>
+                                <p class="text-slate-600 dark:text-slate-400 font-medium mb-2">
+                                    @if(($currentStatus ?? 'active') === 'active')
+                                        No active rentals
+                                    @elseif(($currentStatus ?? 'active') === 'completed')
+                                        No completed rentals
+                                    @else
+                                        No rentals yet
+                                    @endif
+                                </p>
+                                <p class="text-sm text-slate-500 dark:text-slate-500 mb-3">
+                                    @if(($currentStatus ?? 'active') === 'active')
+                                        Active rentals will appear here.
+                                    @elseif(($currentStatus ?? 'active') === 'completed')
+                                        Completed, cancelled, and expired rentals will appear here.
+                                    @else
+                                        Rent a number to get started.
+                                    @endif
+                                </p>
                                 <div class="flex flex-wrap gap-2 justify-center">
                                     <a href="{{ route('rentals.create.server1') }}" title="{{ __('Server 1') }} — US numbers" class="relative px-3 sm:px-4 py-2 rounded-xl bg-mint-500 hover:bg-mint-600 text-white text-sm font-semibold transition inline-flex items-center justify-center">SV1</a>
                                     <a href="{{ route('rentals.create.server2') }}" title="{{ __('Server 2') }}" class="px-3 sm:px-4 py-2 rounded-xl bg-slate-600 hover:bg-slate-700 text-white text-sm font-semibold transition">SV2</a>

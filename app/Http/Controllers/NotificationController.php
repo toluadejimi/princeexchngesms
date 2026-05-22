@@ -6,6 +6,7 @@ use App\Models\Notification as AppNotification;
 use App\Models\NotificationRead;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class NotificationController extends Controller
 {
@@ -15,22 +16,33 @@ class NotificationController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        $notifications = AppNotification::query()
+        $latestNotifications = Cache::remember(AppNotification::LATEST_CACHE_KEY, now()->addMinutes(5), fn () => AppNotification::query()
+            ->select(['id', 'title', 'message', 'created_at'])
             ->orderByDesc('created_at')
             ->limit(50)
             ->get()
-            ->map(function (AppNotification $n) use ($user) {
-                $read = NotificationRead::where('notification_id', $n->id)
-                    ->where('user_id', $user->id)
-                    ->first();
-                return [
-                    'id' => $n->id,
-                    'title' => $n->title,
-                    'message' => $n->message,
-                    'created_at' => $n->created_at->toIso8601String(),
-                    'read_at' => $read?->read_at?->toIso8601String(),
-                ];
-            });
+            ->map(fn (AppNotification $n) => [
+                'id' => $n->id,
+                'title' => $n->title,
+                'message' => $n->message,
+                'created_at' => $n->created_at->toIso8601String(),
+            ])
+            ->all());
+
+        $readByNotification = NotificationRead::query()
+            ->where('user_id', $user->id)
+            ->whereIn('notification_id', collect($latestNotifications)->pluck('id'))
+            ->whereNotNull('read_at')
+            ->get(['notification_id', 'read_at'])
+            ->mapWithKeys(fn (NotificationRead $read) => [
+                $read->notification_id => $read->read_at?->toIso8601String(),
+            ]);
+
+        $notifications = collect($latestNotifications)
+            ->map(fn (array $notification) => $notification + [
+                'read_at' => $readByNotification->get($notification['id']),
+            ])
+            ->values();
 
         $unreadCount = AppNotification::query()
             ->whereDoesntHave('reads', fn ($q) => $q->where('user_id', $user->id)->whereNotNull('read_at'))
@@ -39,7 +51,7 @@ class NotificationController extends Controller
         return response()->json([
             'notifications' => $notifications,
             'unread_count' => $unreadCount,
-        ]);
+        ])->header('Cache-Control', 'private, max-age=30, stale-while-revalidate=60');
     }
 
     /**

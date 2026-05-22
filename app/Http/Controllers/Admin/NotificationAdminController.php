@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Notification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class NotificationAdminController extends Controller
@@ -32,6 +33,8 @@ class NotificationAdminController extends Controller
             'title' => $validated['title'],
             'message' => $validated['message'],
         ]);
+        Cache::forget(Notification::LATEST_CACHE_KEY);
+
         return redirect()->route('admin.notifications.index')->with('message', 'Notification sent to all users.');
     }
 
@@ -42,6 +45,8 @@ class NotificationAdminController extends Controller
     {
         $notification->reads()->delete();
         $notification->delete();
+        Cache::forget(Notification::LATEST_CACHE_KEY);
+
         return redirect()->route('admin.notifications.index')->with('message', 'Notification deleted.');
     }
 }

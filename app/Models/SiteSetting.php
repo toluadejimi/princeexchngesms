@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Cache;
 
 class SiteSetting extends Model
 {
+    private const CACHE_KEY = 'site_settings_all';
+
     protected $primaryKey = 'key';
     public $incrementing = false;
     public $timestamps = false;
@@ -15,17 +17,27 @@ class SiteSetting extends Model
 
     public static function get(string $key, mixed $default = null): mixed
     {
-        $cacheKey = 'site_setting_' . $key;
-        return Cache::remember($cacheKey, now()->addHour(), function () use ($key, $default) {
-            $row = static::find($key);
-            return $row !== null ? $row->value : $default;
-        });
+        $settings = static::allCached();
+
+        return array_key_exists($key, $settings) ? $settings[$key] : $default;
     }
 
     public static function set(string $key, mixed $value): void
     {
         static::updateOrCreate(['key' => $key], ['value' => $value === null ? null : (string) $value]);
+        Cache::forget(self::CACHE_KEY);
         Cache::forget('site_setting_' . $key);
+    }
+
+    private static function allCached(): array
+    {
+        try {
+            return Cache::remember(self::CACHE_KEY, now()->addHour(), fn () => static::query()
+                ->pluck('value', 'key')
+                ->all());
+        } catch (\Throwable) {
+            return [];
+        }
     }
 
     /** Site name (used in nav and page title) */

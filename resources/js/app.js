@@ -4,6 +4,26 @@ import Alpine from 'alpinejs';
 
 window.Alpine = Alpine;
 
+const readSessionCache = (key) => {
+    try {
+        const cached = JSON.parse(sessionStorage.getItem(key) || 'null');
+        if (!cached || cached.expiresAt <= Date.now()) return null;
+
+        return cached.value;
+    } catch (_) {
+        return null;
+    }
+};
+
+const writeSessionCache = (key, value, ttlMs) => {
+    try {
+        sessionStorage.setItem(key, JSON.stringify({
+            value,
+            expiresAt: Date.now() + ttlMs,
+        }));
+    } catch (_) {}
+};
+
 Alpine.data('navWithNotifications', (listUrl, baseUrl, csrf, openNotificationsOnLogin = false) => ({
     open: false,
     panelOpen: false,
@@ -17,7 +37,22 @@ Alpine.data('navWithNotifications', (listUrl, baseUrl, csrf, openNotificationsOn
     baseUrl,
     csrf,
     openNotificationsOnLogin: !!openNotificationsOnLogin,
+    cacheKey(name) {
+        return `sms:${name}:${this.csrf}:${this.listUrl}`;
+    },
+    readCache(name) {
+        return readSessionCache(this.cacheKey(name));
+    },
+    writeCache(name, value, ttlMs) {
+        writeSessionCache(this.cacheKey(name), value, ttlMs);
+    },
     async fetchUnreadCount() {
+        const cached = this.readCache('unread-count');
+        if (cached !== null) {
+            this.unreadCount = Number(cached) || 0;
+            return;
+        }
+
         try {
             const r = await fetch(this.listUrl, {
                 credentials: 'same-origin',
@@ -28,11 +63,21 @@ Alpine.data('navWithNotifications', (listUrl, baseUrl, csrf, openNotificationsOn
                 try {
                     const d = JSON.parse(text);
                     this.unreadCount = Number(d.unread_count) || 0;
+                    this.writeCache('unread-count', this.unreadCount, 30000);
                 } catch (_) {}
             }
         } catch (_) {}
     },
     async fetchNotifications() {
+        const cached = this.readCache('notifications');
+        if (cached && Array.isArray(cached.notifications)) {
+            this.notifications = cached.notifications;
+            const unreadCount = Number(cached.unread_count);
+            this.unreadCount = Number.isFinite(unreadCount) ? unreadCount : this.unreadCount;
+            this.errorMessage = '';
+            return;
+        }
+
         this.loading = true;
         this.notifications = [];
         this.errorMessage = '';
@@ -46,7 +91,13 @@ Alpine.data('navWithNotifications', (listUrl, baseUrl, csrf, openNotificationsOn
                 try {
                     const d = JSON.parse(text);
                     this.notifications = Array.isArray(d.notifications) ? d.notifications : [];
-                    this.unreadCount = Number(d.unread_count) ?? this.unreadCount;
+                    const unreadCount = Number(d.unread_count);
+                    this.unreadCount = Number.isFinite(unreadCount) ? unreadCount : this.unreadCount;
+                    this.writeCache('notifications', {
+                        notifications: this.notifications,
+                        unread_count: this.unreadCount,
+                    }, 60000);
+                    this.writeCache('unread-count', this.unreadCount, 30000);
                 } catch (_) {
                     this.errorMessage = 'Could not load notifications.';
                 }
@@ -71,6 +122,11 @@ Alpine.data('navWithNotifications', (listUrl, baseUrl, csrf, openNotificationsOn
             } catch (_) {}
             n.read_at = new Date().toISOString();
             this.unreadCount = Math.max(0, this.unreadCount - 1);
+            this.writeCache('notifications', {
+                notifications: this.notifications,
+                unread_count: this.unreadCount,
+            }, 60000);
+            this.writeCache('unread-count', this.unreadCount, 30000);
         }
         this.modalNotification = n;
     },

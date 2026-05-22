@@ -291,7 +291,7 @@ class RentalController extends Controller
         $countryCode = $request->query('country_code');
         $server = ApiServer::active()->findOrFail($serverId);
         $services = $this->pricingService->getServicesWithPrices($serverId, $countryCode ?? '');
-        return response()->json(['services' => $services]);
+        return $this->cacheableJson(['services' => $services], 120);
     }
 
     public function countries(Request $request): JsonResponse
@@ -342,7 +342,7 @@ class RentalController extends Controller
             'server_id' => $serverId,
             'count' => count($countries),
         ]);
-        return response()->json(['countries' => $countries]);
+        return $this->cacheableJson(['countries' => $countries], 300);
     }
 
     /** Live/estimated price for selected country + service. Server 1: getPrices(service, country). Server 2: getPrice(country, service, pool). */
@@ -422,21 +422,28 @@ class RentalController extends Controller
                 $pools = $countryId > 0 && method_exists($client, 'getOperators')
                     ? $client->getOperators($countryId)
                     : [];
-                return response()->json(['pools' => $pools]);
+                return $this->cacheableJson(['pools' => $pools], 120);
             }
             if ($server->isMultiCountry()) {
                 $pools = method_exists($client, 'getPools') ? $client->getPools() : [];
 
-                return response()->json(['pools' => $pools]);
+                return $this->cacheableJson(['pools' => $pools], 120);
             }
             if ($server->isFiveSim()) {
-                return response()->json(['pools' => []]);
+                return $this->cacheableJson(['pools' => []], 120);
             }
         } catch (\Throwable $e) {
             // fall through
         }
 
-        return response()->json(['pools' => []]);
+        return $this->cacheableJson(['pools' => []], 120);
+    }
+
+    private function cacheableJson(array $payload, int $seconds): JsonResponse
+    {
+        return response()
+            ->json($payload)
+            ->header('Cache-Control', "private, max-age={$seconds}, stale-while-revalidate=" . ($seconds * 2));
     }
 
     /** Fallback country list when API returns empty or fails. */

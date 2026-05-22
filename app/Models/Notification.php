@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Notification extends Model
 {
+    public const LATEST_CACHE_KEY = 'notifications.latest.50';
+
     protected $fillable = ['title', 'message'];
 
     public function reads(): HasMany

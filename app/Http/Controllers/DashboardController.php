@@ -59,7 +59,8 @@ class DashboardController extends Controller
         ])->render();
 
         return response()->json(['html' => $html])
-            ->header('Cache-Control', 'private, max-age=15, stale-while-revalidate=30');
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache');
     }
 
     /** Dismiss the login popup for this session (user clicked Disable/Close). */

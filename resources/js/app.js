@@ -247,6 +247,7 @@ Alpine.data('dashboardLazy', (dataUrl) => ({
             url.search = window.location.search;
 
             const response = await fetch(url.toString(), {
+                cache: 'no-store',
                 credentials: 'same-origin',
                 headers: {
                     'Accept': 'application/json',

@@ -9,9 +9,24 @@
     <form method="POST" action="{{ route('login') }}" class="space-y-5" x-data="{ submitting: false }" @submit="submitting = true">
         @csrf
 
+        <div
+            x-show="submitting"
+            x-cloak
+            x-transition.opacity
+            class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 backdrop-blur-sm px-4"
+            role="status"
+            aria-live="polite"
+        >
+            <div class="w-full max-w-xs rounded-2xl border border-white/10 bg-white dark:bg-slate-900 shadow-2xl p-6 text-center">
+                <div class="mx-auto mb-4 h-12 w-12 rounded-full border-4 border-mint-200 border-t-mint-500 animate-spin"></div>
+                <p class="text-sm font-semibold text-slate-900 dark:text-white">Signing you in...</p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Please wait while we verify your account.</p>
+            </div>
+        </div>
+
         <div>
             <label for="email" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Email address</label>
-            <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username"
+            <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username" :readonly="submitting"
                 class="block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 px-4 py-3 text-sm shadow-sm focus:border-mint-500 focus:ring-2 focus:ring-mint-500/20 dark:focus:border-mint-500 dark:focus:ring-mint-500/20 transition-colors"
                 placeholder="you@example.com" />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
@@ -19,7 +34,7 @@
 
         <div>
             <label for="password" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Password</label>
-            <input id="password" type="password" name="password" required autocomplete="current-password"
+            <input id="password" type="password" name="password" required autocomplete="current-password" :readonly="submitting"
                 class="block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 px-4 py-3 text-sm shadow-sm focus:border-mint-500 focus:ring-2 focus:ring-mint-500/20 dark:focus:border-mint-500 dark:focus:ring-mint-500/20 transition-colors"
                 placeholder="••••••••" />
             <x-input-error :messages="$errors->get('password')" class="mt-2" />

@@ -45,4 +45,10 @@ return [
         'connect_timeout' => (int) env('GETATEXT_HTTP_CONNECT_TIMEOUT', 25),
     ],
 
+    /** HTTP client limits for Server 2 (SMSPool); cURL 7 usually means the host cannot reach api.smspool.net:443. */
+    'smspool' => [
+        'timeout' => (int) env('SMSPOOL_HTTP_TIMEOUT', 30),
+        'connect_timeout' => (int) env('SMSPOOL_HTTP_CONNECT_TIMEOUT', 10),
+    ],
+
 ];

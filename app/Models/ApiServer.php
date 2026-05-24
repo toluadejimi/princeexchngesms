@@ -4,10 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 
 class ApiServer extends Model
 {
+    private const ACTIVE_CACHE_KEY = 'api_servers_active_sorted';
+
     protected $fillable = [
         'name',
         'base_url',
@@ -26,6 +30,26 @@ class ApiServer extends Model
             'status' => 'boolean',
             'profit_margin_percent' => 'decimal:2',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => Cache::forget(self::ACTIVE_CACHE_KEY));
+        static::deleted(fn () => Cache::forget(self::ACTIVE_CACHE_KEY));
+    }
+
+    /**
+     * Active servers are used on every customer dashboard/request form render.
+     *
+     * @return Collection<int, self>
+     */
+    public static function activeCached(): Collection
+    {
+        return Cache::remember(
+            self::ACTIVE_CACHE_KEY,
+            now()->addMinutes(10),
+            fn () => self::active()->orderBy('sort_order')->get()
+        );
     }
 
     public function getDecryptedApiKey(): string
@@ -93,7 +117,7 @@ class ApiServer extends Model
             return $this->name ?: 'Server';
         }
 
-        return $this->name ?: ('Server ' . ($this->sort_order ?: 1));
+        return $this->name ?: ('Server '.($this->sort_order ?: 1));
     }
 
     public function scopeActive($query)

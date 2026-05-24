@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\ApiServer;
 use App\Models\SiteSetting;
-use App\Support\CustomerFacing;
 use App\Services\PricingService;
 use App\Services\RentalService;
+use App\Support\CustomerFacing;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,14 +21,15 @@ class RentalController extends Controller
 
     public function create(): View
     {
-        $servers = ApiServer::active()->orderBy('sort_order')->get();
+        $servers = ApiServer::activeCached();
+
         return view('rentals.create', ['servers' => $servers]);
     }
 
     /** Server 1 – US-focused numbers. */
     public function createServer1(): View|\Illuminate\Http\RedirectResponse
     {
-        $server = ApiServer::active()->where('type', 'getatext')->first();
+        $server = ApiServer::activeCached()->firstWhere('type', 'getatext');
         if (! $server) {
             return redirect()->route('dashboard')->with('error', 'Server 1 is not available at the moment.');
         }
@@ -46,7 +47,7 @@ class RentalController extends Controller
     /** Server 2 – many countries. */
     public function createServer2(): View|\Illuminate\Http\RedirectResponse
     {
-        $server = ApiServer::active()->where('type', 'multi_country')->first();
+        $server = ApiServer::activeCached()->firstWhere('type', 'multi_country');
         if (! $server) {
             return redirect()->route('dashboard')->with('error', 'Server 2 is not available at the moment.');
         }
@@ -64,7 +65,7 @@ class RentalController extends Controller
     /** Server 3 – worldwide numbers. */
     public function createServer3(): View|\Illuminate\Http\RedirectResponse
     {
-        $server = ApiServer::active()->where('type', 'fivesim')->first();
+        $server = ApiServer::activeCached()->firstWhere('type', 'fivesim');
         if (! $server) {
             return redirect()->route('dashboard')->with('error', 'Server 3 is not available at the moment.');
         }
@@ -135,7 +136,7 @@ class RentalController extends Controller
                 $options['pool_id'] = $validated['pool_id'];
             }
         }
-        if (!empty($validated['country_id'])) {
+        if (! empty($validated['country_id'])) {
             $options['country_id'] = $validated['country_id'];
         }
 
@@ -147,6 +148,7 @@ class RentalController extends Controller
                 $countryCode,
                 $options
             );
+
             return response()->json([
                 'message' => 'Number rented successfully.',
                 'rental' => [
@@ -166,6 +168,7 @@ class RentalController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
             $message = CustomerFacing::exceptionMessage($e, true);
+
             return response()->json(['message' => $message], 422);
         }
     }
@@ -173,22 +176,25 @@ class RentalController extends Controller
     public function cancel(int $id, Request $request): RedirectResponse|JsonResponse
     {
         $rental = \App\Models\Rental::where('user_id', $request->user()->id)->with('server')->findOrFail($id);
-        if (!$rental->isCancelAllowed()) {
+        if (! $rental->isCancelAllowed()) {
             $at = $rental->cancelAllowedAt();
-            $msg = $at ? 'Cancel is not available yet. Please try again in ' . now()->diffForHumans($at, true) . '.' : 'Cancel not available.';
+            $msg = $at ? 'Cancel is not available yet. Please try again in '.now()->diffForHumans($at, true).'.' : 'Cancel not available.';
             if ($request->expectsJson()) {
                 return response()->json(['message' => $msg], 422);
             }
+
             return redirect()->route('dashboard')->with('error', $msg);
         }
         try {
             $this->rentalService->cancelRental($rental);
+
             return redirect()->route('dashboard')->with('message', 'Rental cancelled. Amount refunded.');
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('Rental cancel failed', ['message' => $e->getMessage(), 'rental_id' => $id]);
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Unable to cancel. Please try again.'], 422);
             }
+
             return redirect()->route('dashboard')->with('error', 'Unable to cancel. Please try again.');
         }
     }
@@ -200,6 +206,7 @@ class RentalController extends Controller
             $this->rentalService->expireRental($rental);
             $rental->refresh();
         }
+
         return response()->json(['status' => $rental->status, 'expired' => $rental->status === \App\Models\Rental::STATUS_EXPIRED]);
     }
 
@@ -208,6 +215,7 @@ class RentalController extends Controller
         $rental = \App\Models\Rental::where('user_id', $request->user()->id)->findOrFail($id);
         $this->rentalService->checkAndUpdateSms($rental);
         $rental->refresh();
+
         return response()->json([
             'status' => $rental->status,
             'sms_code' => $rental->sms_code,
@@ -222,6 +230,7 @@ class RentalController extends Controller
         $rental = \App\Models\Rental::where('user_id', $request->user()->id)->findOrFail($id);
         if (! $rental->server || ! $rental->server->isMultiCountry()) {
             $msg = 'Resend is only available for Server 2 rentals.';
+
             return $request->expectsJson() ? response()->json(['message' => $msg], 422) : redirect()->route('dashboard')->with('error', $msg);
         }
         try {
@@ -230,11 +239,13 @@ class RentalController extends Controller
             $this->rentalService->checkAndUpdateSms($rental);
             $rental->refresh();
             $msg = 'Resend requested.';
+
             return $request->expectsJson()
                 ? response()->json(['message' => $msg, 'status' => $rental->status, 'sms_messages' => $rental->getSmsMessagesList()])
                 : redirect()->route('dashboard')->with('message', $msg);
         } catch (\Throwable $e) {
             $msg = $e->getMessage() ?: 'Resend failed.';
+
             return $request->expectsJson() ? response()->json(['message' => $msg], 422) : redirect()->route('dashboard')->with('error', $msg);
         }
     }
@@ -245,6 +256,7 @@ class RentalController extends Controller
         $rental = \App\Models\Rental::where('user_id', $request->user()->id)->findOrFail($id);
         if (! $rental->server || ! $rental->server->isMultiCountry()) {
             $msg = 'Activate is only available for Server 2 rentals.';
+
             return $request->expectsJson() ? response()->json(['message' => $msg], 422) : redirect()->route('dashboard')->with('error', $msg);
         }
         try {
@@ -253,11 +265,13 @@ class RentalController extends Controller
             $this->rentalService->checkAndUpdateSms($rental);
             $rental->refresh();
             $msg = 'Activate requested.';
+
             return $request->expectsJson()
                 ? response()->json(['message' => $msg, 'status' => $rental->status])
                 : redirect()->route('dashboard')->with('message', $msg);
         } catch (\Throwable $e) {
             $msg = $e->getMessage() ?: 'Activate failed.';
+
             return $request->expectsJson() ? response()->json(['message' => $msg], 422) : redirect()->route('dashboard')->with('error', $msg);
         }
     }
@@ -268,6 +282,7 @@ class RentalController extends Controller
         $rental = \App\Models\Rental::where('user_id', $request->user()->id)->findOrFail($id);
         if (! $rental->server || ! $rental->server->isMultiCountry()) {
             $msg = 'Reactivate is only available for Server 2 rentals.';
+
             return $request->expectsJson() ? response()->json(['message' => $msg], 422) : redirect()->route('dashboard')->with('error', $msg);
         }
         try {
@@ -276,11 +291,13 @@ class RentalController extends Controller
             $this->rentalService->checkAndUpdateSms($rental);
             $rental->refresh();
             $msg = 'Reactivate requested.';
+
             return $request->expectsJson()
                 ? response()->json(['message' => $msg, 'status' => $rental->status])
                 : redirect()->route('dashboard')->with('message', $msg);
         } catch (\Throwable $e) {
             $msg = $e->getMessage() ?: 'Reactivate failed.';
+
             return $request->expectsJson() ? response()->json(['message' => $msg], 422) : redirect()->route('dashboard')->with('error', $msg);
         }
     }
@@ -291,6 +308,7 @@ class RentalController extends Controller
         $countryCode = $request->query('country_code');
         $server = ApiServer::active()->findOrFail($serverId);
         $services = $this->pricingService->getServicesWithPrices($serverId, $countryCode ?? '');
+
         return $this->cacheableJson(['services' => $services], 120);
     }
 
@@ -312,7 +330,7 @@ class RentalController extends Controller
                 $failureReason = 'API returned empty list';
             }
         } catch (\Throwable $e) {
-            $failureReason = 'Exception: ' . $e->getMessage();
+            $failureReason = 'Exception: '.$e->getMessage();
             \Illuminate\Support\Facades\Log::warning('Rental countries: fetch failed', [
                 'server_id' => $serverId,
                 'server_name' => $server->name,
@@ -342,6 +360,7 @@ class RentalController extends Controller
             'server_id' => $serverId,
             'count' => count($countries),
         ]);
+
         return $this->cacheableJson(['countries' => $countries], 300);
     }
 
@@ -422,6 +441,7 @@ class RentalController extends Controller
                 $pools = $countryId > 0 && method_exists($client, 'getOperators')
                     ? $client->getOperators($countryId)
                     : [];
+
                 return $this->cacheableJson(['pools' => $pools], 120);
             }
             if ($server->isMultiCountry()) {
@@ -443,7 +463,7 @@ class RentalController extends Controller
     {
         return response()
             ->json($payload)
-            ->header('Cache-Control', "private, max-age={$seconds}, stale-while-revalidate=" . ($seconds * 2));
+            ->header('Cache-Control', "private, max-age={$seconds}, stale-while-revalidate=".($seconds * 2));
     }
 
     /** Fallback country list when API returns empty or fails. */
@@ -470,6 +490,7 @@ class RentalController extends Controller
             ['code' => 'PH', 'name' => 'Philippines'],
             ['code' => 'VN', 'name' => 'Vietnam'],
         ];
+
         return array_map(fn ($c) => ['code' => $c['code'], 'name' => $c['name'], 'provider_id' => $c['code']], $list);
     }
 }

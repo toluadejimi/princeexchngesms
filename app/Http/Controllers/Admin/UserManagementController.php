@@ -9,6 +9,7 @@ use App\Services\WalletService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -29,7 +30,19 @@ class UserManagementController extends Controller
 
         $users = $query->paginate(20)->withQueryString();
 
-        return view('admin.users.index', ['users' => $users]);
+        return view('admin.users.index', [
+            'users' => $users,
+            'userStats' => [
+                'newToday' => User::whereDate('created_at', today())->count(),
+                'thisWeek' => User::where('created_at', '>=', now()->startOfWeek())->count(),
+                'thisMonth' => User::where('created_at', '>=', now()->startOfMonth())->count(),
+                'activeUsers' => DB::table('sessions')
+                    ->whereNotNull('user_id')
+                    ->where('last_activity', '>=', now()->subMinutes(15)->timestamp)
+                    ->distinct('user_id')
+                    ->count('user_id'),
+            ],
+        ]);
     }
 
     public function show(User $user): View

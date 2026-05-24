@@ -17,7 +17,11 @@
                 <div class="rounded-lg border border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-800/50">
                     <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Server 1</p>
                     @if(isset($server1_error))
-                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $server1_error }}</p>
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400 break-words">{{ $server1_error }}</p>
+                        @if(!empty($server1_cached))
+                            <p class="mt-2 text-xl font-semibold text-mint-600 dark:text-mint-400">${{ number_format($server1_balance ?? 0, 2) }}</p>
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Showing last saved balance</p>
+                        @endif
                     @else
                         <p class="mt-1 text-xl font-semibold text-mint-600 dark:text-mint-400">${{ number_format($server1_balance ?? 0, 2) }}</p>
                     @endif
@@ -25,7 +29,11 @@
                 <div class="rounded-lg border border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-800/50">
                     <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Server 2</p>
                     @if(isset($server2_error))
-                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $server2_error }}</p>
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400 break-words">{{ $server2_error }}</p>
+                        @if(!empty($server2_cached))
+                            <p class="mt-2 text-xl font-semibold text-mint-600 dark:text-mint-400">${{ number_format($server2_balance ?? 0, 2) }}</p>
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Showing last saved balance</p>
+                        @endif
                     @else
                         <p class="mt-1 text-xl font-semibold text-mint-600 dark:text-mint-400">${{ number_format($server2_balance ?? 0, 2) }}</p>
                     @endif
@@ -33,7 +41,11 @@
                 <div class="rounded-lg border border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-800/50 sm:col-span-2 lg:col-span-1">
                     <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Server 3</p>
                     @if(isset($server3_error))
-                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $server3_error }}</p>
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400 break-words">{{ $server3_error }}</p>
+                        @if(!empty($server3_cached))
+                            <p class="mt-2 text-xl font-semibold text-mint-600 dark:text-mint-400">${{ number_format($server3_balance ?? 0, 2) }}</p>
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Showing last saved balance</p>
+                        @endif
                     @else
                         <p class="mt-1 text-xl font-semibold text-mint-600 dark:text-mint-400">${{ number_format($server3_balance ?? 0, 2) }}</p>
                     @endif

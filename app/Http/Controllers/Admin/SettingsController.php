@@ -8,6 +8,7 @@ use App\Models\SiteSetting;
 use App\Services\Sms\SmsServerFactory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -15,48 +16,9 @@ class SettingsController extends Controller
 {
     public function index(): View
     {
-        $server1Balance = null;
-        $server1Error = null;
-        $server2Balance = null;
-        $server2Error = null;
-
-        $server1 = ApiServer::active()->where('type', 'getatext')->first();
-        if ($server1) {
-            try {
-                $client = SmsServerFactory::make($server1);
-                $server1Balance = $client->getBalance();
-            } catch (\Throwable $e) {
-                $server1Error = $e->getMessage();
-            }
-        } else {
-            $server1Error = 'Server 1 not configured.';
-        }
-
-        $server2 = ApiServer::active()->where('type', 'multi_country')->first();
-        if ($server2) {
-            try {
-                $client = SmsServerFactory::make($server2);
-                $server2Balance = $client->getBalance();
-            } catch (\Throwable $e) {
-                $server2Error = $e->getMessage();
-            }
-        } else {
-            $server2Error = 'Server 2 not configured.';
-        }
-
-        $server3Balance = null;
-        $server3Error = null;
-        $server3 = ApiServer::active()->where('type', 'fivesim')->first();
-        if ($server3) {
-            try {
-                $client = SmsServerFactory::make($server3);
-                $server3Balance = $client->getBalance();
-            } catch (\Throwable $e) {
-                $server3Error = $e->getMessage();
-            }
-        } else {
-            $server3Error = 'Server 3 not configured or disabled.';
-        }
+        $server1 = $this->providerBalance('getatext', 'Server 1');
+        $server2 = $this->providerBalance('multi_country', 'Server 2');
+        $server3 = $this->providerBalance('fivesim', 'Server 3');
 
         return view('admin.settings.index', [
             'site_name' => SiteSetting::get('site_name', config('app.name', '')),
@@ -71,16 +33,59 @@ class SettingsController extends Controller
             'manual_account_name' => SiteSetting::get('manual_account_name', ''),
             'manual_funding_enabled' => SiteSetting::get('manual_funding_enabled', '0'),
             'telegram_url' => SiteSetting::telegramUrl(),
-            'server1_balance' => $server1Balance,
-            'server1_error' => $server1Error,
-            'server2_balance' => $server2Balance,
-            'server2_error' => $server2Error,
-            'server3_balance' => $server3Balance,
-            'server3_error' => $server3Error,
+            'server1_balance' => $server1['balance'],
+            'server1_error' => $server1['error'],
+            'server1_cached' => $server1['cached'],
+            'server2_balance' => $server2['balance'],
+            'server2_error' => $server2['error'],
+            'server2_cached' => $server2['cached'],
+            'server3_balance' => $server3['balance'],
+            'server3_error' => $server3['error'],
+            'server3_cached' => $server3['cached'],
             'login_popup_enabled' => SiteSetting::get('login_popup_enabled', '0'),
             'login_popup_title' => SiteSetting::get('login_popup_title', ''),
             'login_popup_message' => SiteSetting::get('login_popup_message', ''),
         ]);
+    }
+
+    /**
+     * @return array{balance: float|null, error: string|null, cached: bool}
+     */
+    private function providerBalance(string $type, string $label): array
+    {
+        $server = ApiServer::activeCached()->firstWhere('type', $type);
+        if (! $server) {
+            return ['balance' => null, 'error' => "{$label} not configured or disabled.", 'cached' => false];
+        }
+
+        $cacheKey = "provider_balance_{$server->id}";
+        $cachedBalance = Cache::get($cacheKey);
+
+        try {
+            $balance = SmsServerFactory::make($server)->getBalance();
+            Cache::put($cacheKey, $balance, now()->addMinutes(5));
+
+            return ['balance' => $balance, 'error' => null, 'cached' => false];
+        } catch (\Throwable $e) {
+            if ($cachedBalance !== null) {
+                return ['balance' => (float) $cachedBalance, 'error' => $this->providerBalanceError($e), 'cached' => true];
+            }
+
+            return ['balance' => null, 'error' => $this->providerBalanceError($e), 'cached' => false];
+        }
+    }
+
+    private function providerBalanceError(\Throwable $e): string
+    {
+        $message = $e->getMessage();
+        if (str_contains($message, 'cURL error 7') || str_contains($message, 'Failed to connect')) {
+            return 'Unable to connect to provider. Check the server network, API base URL, or firewall.';
+        }
+        if (str_contains($message, 'cURL error 28') || str_contains($message, 'timed out')) {
+            return 'Provider request timed out. Please try again shortly.';
+        }
+
+        return 'Unable to load provider balance right now.';
     }
 
     public function store(Request $request): RedirectResponse

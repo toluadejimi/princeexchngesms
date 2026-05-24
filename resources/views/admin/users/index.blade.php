@@ -14,6 +14,34 @@
             <p class="text-sm text-red-600 dark:text-red-400">{{ session('error') }}</p>
         @endif
 
+        <section class="bg-white/80 dark:bg-slate-900/80 backdrop-blur rounded-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-glass">
+            <div class="flex flex-wrap items-start justify-between gap-3 mb-5">
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">User Statistics</h3>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">New signups and currently active sessions.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/70 px-5 py-6 text-center">
+                    <p class="text-4xl font-extrabold text-red-600 dark:text-red-400 tabular-nums">{{ number_format($userStats['newToday'] ?? 0) }}</p>
+                    <p class="mt-1 text-sm sm:text-base font-medium text-slate-600 dark:text-slate-400">New Today</p>
+                </div>
+                <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/70 px-5 py-6 text-center">
+                    <p class="text-4xl font-extrabold text-sky-500 dark:text-sky-400 tabular-nums">{{ number_format($userStats['thisWeek'] ?? 0) }}</p>
+                    <p class="mt-1 text-sm sm:text-base font-medium text-slate-600 dark:text-slate-400">This Week</p>
+                </div>
+                <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/70 px-5 py-6 text-center">
+                    <p class="text-4xl font-extrabold text-emerald-500 dark:text-emerald-400 tabular-nums">{{ number_format($userStats['thisMonth'] ?? 0) }}</p>
+                    <p class="mt-1 text-sm sm:text-base font-medium text-slate-600 dark:text-slate-400">This Month</p>
+                </div>
+                <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/70 px-5 py-6 text-center">
+                    <p class="text-4xl font-extrabold text-purple-600 dark:text-purple-400 tabular-nums">{{ number_format($userStats['activeUsers'] ?? 0) }}</p>
+                    <p class="mt-1 text-sm sm:text-base font-medium text-slate-600 dark:text-slate-400">Active Users</p>
+                </div>
+            </div>
+        </section>
+
         <form method="GET" action="{{ route('admin.users.index') }}" class="flex gap-2">
             <input type="text" name="q" value="{{ request('q') }}" placeholder="Search by email or name..." class="rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 flex-1 max-w-sm">
             <button type="submit" class="px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium">Search</button>

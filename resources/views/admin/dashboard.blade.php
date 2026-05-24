@@ -85,40 +85,6 @@
             </div>
         </section>
 
-        {{-- User statistics --}}
-        <section>
-            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm">
-                <div class="flex flex-wrap items-start justify-between gap-3 mb-5">
-                    <div>
-                        <h3 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">User Statistics</h3>
-                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">New signups and currently active sessions.</p>
-                    </div>
-                    <a href="{{ route('admin.users.index') }}" class="inline-flex items-center justify-center min-h-[40px] px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
-                        Manage users
-                    </a>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/70 px-5 py-6 text-center">
-                        <p class="text-4xl font-extrabold text-red-600 dark:text-red-400 tabular-nums">{{ number_format($userStats['newToday'] ?? 0) }}</p>
-                        <p class="mt-1 text-sm sm:text-base font-medium text-slate-600 dark:text-slate-400">New Today</p>
-                    </div>
-                    <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/70 px-5 py-6 text-center">
-                        <p class="text-4xl font-extrabold text-sky-500 dark:text-sky-400 tabular-nums">{{ number_format($userStats['thisWeek'] ?? 0) }}</p>
-                        <p class="mt-1 text-sm sm:text-base font-medium text-slate-600 dark:text-slate-400">This Week</p>
-                    </div>
-                    <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/70 px-5 py-6 text-center">
-                        <p class="text-4xl font-extrabold text-emerald-500 dark:text-emerald-400 tabular-nums">{{ number_format($userStats['thisMonth'] ?? 0) }}</p>
-                        <p class="mt-1 text-sm sm:text-base font-medium text-slate-600 dark:text-slate-400">This Month</p>
-                    </div>
-                    <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/70 px-5 py-6 text-center">
-                        <p class="text-4xl font-extrabold text-purple-600 dark:text-purple-400 tabular-nums">{{ number_format($userStats['activeUsers'] ?? 0) }}</p>
-                        <p class="mt-1 text-sm sm:text-base font-medium text-slate-600 dark:text-slate-400">Active Users</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
         {{-- Revenue by server --}}
         <section>
             <h3 class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-4">Revenue by server</h3>

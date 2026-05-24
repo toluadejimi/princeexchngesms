@@ -27,6 +27,16 @@ class AdminDashboardController extends Controller
         $totalUsers = User::count();
         $totalWalletBalance = (float) User::sum('wallet_balance');
         $servers = ApiServer::withCount('rentals')->get();
+        $userStats = [
+            'newToday' => User::whereDate('created_at', today())->count(),
+            'thisWeek' => User::where('created_at', '>=', now()->startOfWeek())->count(),
+            'thisMonth' => User::where('created_at', '>=', now()->startOfMonth())->count(),
+            'activeUsers' => DB::table('sessions')
+                ->whereNotNull('user_id')
+                ->where('last_activity', '>=', now()->subMinutes(15)->timestamp)
+                ->distinct('user_id')
+                ->count('user_id'),
+        ];
 
         return view('admin.dashboard', [
             'revenueByServer' => $revenueByServer,
@@ -35,6 +45,7 @@ class AdminDashboardController extends Controller
             'totalRevenue' => $totalRevenue,
             'totalUsers' => $totalUsers,
             'totalWalletBalance' => $totalWalletBalance,
+            'userStats' => $userStats,
             'servers' => $servers,
         ]);
     }

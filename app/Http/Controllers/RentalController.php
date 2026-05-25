@@ -105,8 +105,9 @@ class RentalController extends Controller
         $validated = $request->validate([
             'server_id' => 'required|exists:api_servers,id',
             'service_code' => 'required|string|max:50',
-            'country_code' => 'nullable|string|max:10',
-            'country_id' => 'nullable|string|max:20',
+            // Server 3 (FiveSim) uses slugs like "afghanistan" (11+ chars), not ISO-2 only.
+            'country_code' => 'nullable|string|max:64',
+            'country_id' => 'nullable|string|max:64',
             'areas' => 'nullable|string|max:200',
             'carriers' => 'nullable|string|max:100',
             'number' => 'nullable|string|max:20',

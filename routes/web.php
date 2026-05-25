@@ -1,16 +1,17 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\MaintenanceController;
+use App\Http\Controllers\Admin\NotificationAdminController;
 use App\Http\Controllers\Admin\PricingController;
 use App\Http\Controllers\Admin\ServerController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\UserManagementController;
-use App\Http\Controllers\Admin\NotificationAdminController;
 use App\Http\Controllers\Admin\WalletAdminController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\FundWalletController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RentalController;
 use Illuminate\Support\Facades\Route;
@@ -84,6 +85,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('pricing', [PricingController::class, 'index'])->name('pricing.index');
     Route::post('pricing', [PricingController::class, 'store'])->name('pricing.store');
     Route::post('wallet/adjust', [WalletAdminController::class, 'adjust'])->name('wallet.adjust');
+    Route::post('maintenance/migrate', [MaintenanceController::class, 'migrate'])->name('maintenance.migrate');
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::post('settings', [SettingsController::class, 'store'])->name('settings.store');
     Route::get('notifications', [NotificationAdminController::class, 'index'])->name('notifications.index');

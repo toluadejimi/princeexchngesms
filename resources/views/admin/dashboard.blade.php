@@ -9,6 +9,23 @@
     </x-slot>
 
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
+        @if(session('success'))
+            <div class="rounded-xl border border-mint-200 dark:border-mint-800 bg-mint-50 dark:bg-mint-900/20 px-4 py-3 text-sm font-medium text-mint-800 dark:text-mint-200">
+                {{ session('success') }}
+            </div>
+        @endif
+        @if(session('error'))
+            <div class="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm font-medium text-red-800 dark:text-red-200">
+                {{ session('error') }}
+            </div>
+        @endif
+        @if(session('artisan_output'))
+            <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-950 text-slate-100 overflow-hidden">
+                <div class="px-4 py-2 border-b border-slate-800 text-xs font-semibold uppercase tracking-wide text-slate-400">Artisan output</div>
+                <pre class="p-4 text-xs leading-relaxed overflow-x-auto whitespace-pre-wrap">{{ session('artisan_output') }}</pre>
+            </div>
+        @endif
+
         {{-- Overview stats --}}
         <section>
             <h3 class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-4">Overview</h3>
@@ -147,6 +164,13 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                     Logs
                 </a>
+                <form action="{{ route('admin.maintenance.migrate') }}" method="POST" class="inline" onsubmit="return confirm('Run database migrations now? Only continue after deploying the latest code and database backup.');">
+                    @csrf
+                    <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 transition shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        Run migrations
+                    </button>
+                </form>
             </div>
         </section>
     </div>

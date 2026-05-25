@@ -5,8 +5,11 @@ namespace App\Services\Sms;
 use App\Models\ApiRequestLog;
 use App\Models\ApiServer;
 use App\Services\Sms\Contracts\SmsServerInterface;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 /**
  * SMSPool API – multi-country SMS (Other Countries server).
@@ -32,32 +35,99 @@ class MultiCountrySmsService implements SmsServerInterface
         $form['key'] = $this->getApiKey();
         $url = rtrim($this->server->base_url, '/').$path;
         $start = microtime(true);
-        $response = Http::asForm()
-            ->connectTimeout((int) config('services.smspool.connect_timeout', 10))
-            ->timeout((int) config('services.smspool.timeout', 30))
-            ->post($url, $form);
 
-        $duration = (microtime(true) - $start) * 1000;
-        if (config('app.log_api_requests', false)) {
-            ApiRequestLog::create([
-                'server_id' => $this->server->id,
-                'action' => $logAction,
-                'method' => 'POST',
-                'url' => $url,
-                'status_code' => $response->status(),
-                'response_body' => substr((string) $response->body(), 0, 2000),
-                'duration_ms' => round($duration, 2),
-            ]);
-        }
+        try {
+            $response = Http::asForm()
+                ->connectTimeout((int) config('services.smspool.connect_timeout', 10))
+                ->timeout((int) config('services.smspool.timeout', 30))
+                ->post($url, $form);
 
-        if (! $response->successful()) {
-            // Customer-facing message should not expose provider name; log handles details.
+            $durationMs = (microtime(true) - $start) * 1000;
+            $status = $response->status();
+            $rawBody = (string) $response->body();
+
+            $this->recordHttpLog($logAction, $url, $status, $rawBody, null, $durationMs);
+
+            if (! $response->successful()) {
+                throw new \RuntimeException('Network error, please try again.');
+            }
+
+            $body = $response->json();
+
+            return is_array($body) ? $body : [];
+        } catch (ConnectionException $e) {
+            $durationMs = (microtime(true) - $start) * 1000;
+            $this->recordHttpLog($logAction, $url, 0, null, $e->getMessage(), $durationMs);
+
+            throw new \RuntimeException('Network error, please try again.');
+        } catch (RequestException $e) {
+            $durationMs = (microtime(true) - $start) * 1000;
+            $httpResponse = $e->response;
+            $status = $httpResponse ? $httpResponse->status() : 0;
+            $rawBody = $httpResponse ? (string) $httpResponse->body() : null;
+            $this->recordHttpLog($logAction, $url, $status, $rawBody, $e->getMessage(), $durationMs);
+
             throw new \RuntimeException('Network error, please try again.');
         }
+    }
 
-        $body = $response->json();
+    /**
+     * Always writes SMSPool HTTP details to storage/logs (for hosting/debug).
+     * Also stores in api_request_logs when LOG_API_REQUESTS=true or on failure.
+     */
+    protected function recordHttpLog(
+        string $action,
+        string $url,
+        int $statusCode,
+        ?string $responseBody,
+        ?string $error,
+        float $durationMs
+    ): void {
+        $bodySample = $responseBody !== null ? substr($responseBody, 0, 2000) : null;
+        $failed = $error !== null || $statusCode === 0 || ($statusCode >= 400);
 
-        return is_array($body) ? $body : [];
+        $context = [
+            'action' => $action,
+            'server_id' => $this->server->id,
+            'server_name' => $this->server->name,
+            'url' => $url,
+            'status_code' => $statusCode ?: null,
+            'duration_ms' => round($durationMs, 2),
+            'connect_timeout' => (int) config('services.smspool.connect_timeout', 10),
+            'timeout' => (int) config('services.smspool.timeout', 30),
+        ];
+
+        if ($error !== null) {
+            $context['curl_error'] = $error;
+        }
+        if ($bodySample !== null && $bodySample !== '') {
+            $context['response_body'] = $bodySample;
+        }
+
+        if ($failed) {
+            Log::error('SMSPool HTTP request failed', $context);
+        } else {
+            Log::info('SMSPool HTTP response', $context);
+        }
+
+        if ($failed || config('app.log_api_requests', false)) {
+            try {
+                ApiRequestLog::create([
+                    'server_id' => $this->server->id,
+                    'action' => $action,
+                    'method' => 'POST',
+                    'url' => $url,
+                    'status_code' => $statusCode > 0 ? $statusCode : null,
+                    'response_body' => $bodySample,
+                    'error' => $error !== null ? substr($error, 0, 1000) : ($failed && $statusCode >= 400 ? 'HTTP '.$statusCode : null),
+                    'duration_ms' => round($durationMs, 2),
+                ]);
+            } catch (\Throwable $logException) {
+                Log::warning('SMSPool: could not write api_request_logs row', [
+                    'message' => $logException->getMessage(),
+                ]);
+            }
+        }
     }
 
     public function getBalance(): float

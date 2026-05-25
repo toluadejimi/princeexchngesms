@@ -162,11 +162,16 @@ class RentalController extends Controller
                 'redirect' => route('dashboard'),
             ]);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('Rental store failed', [
+            \Illuminate\Support\Facades\Log::error('Rental store failed', [
                 'message' => $e->getMessage(),
                 'user_id' => $request->user()?->id,
+                'server_id' => $validated['server_id'] ?? null,
+                'service_code' => $validated['service_code'] ?? null,
+                'country_code' => $validated['country_code'] ?? null,
+                'country_id' => $validated['country_id'] ?? null,
                 'exception' => $e::class,
-                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
             ]);
             $message = CustomerFacing::exceptionMessage($e, true);
 

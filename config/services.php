@@ -51,4 +51,10 @@ return [
         'connect_timeout' => (int) env('SMSPOOL_HTTP_CONNECT_TIMEOUT', 10),
     ],
 
+    /** HTTP client limits for Server 3 (FiveSim). */
+    'fivesim' => [
+        'timeout' => (int) env('FIVESIM_HTTP_TIMEOUT', 45),
+        'connect_timeout' => (int) env('FIVESIM_HTTP_CONNECT_TIMEOUT', 15),
+    ],
+
 ];

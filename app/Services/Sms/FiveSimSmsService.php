@@ -5,6 +5,9 @@ namespace App\Services\Sms;
 use App\Models\ApiRequestLog;
 use App\Models\ApiServer;
 use App\Services\Sms\Contracts\SmsServerInterface;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -47,35 +50,166 @@ class FiveSimSmsService implements SmsServerInterface
     }
 
     /**
+     * @param  array<string, mixed>  $context
      * @return array<string, mixed>
      */
-    protected function getJson(string $path, array $query = [], bool $auth = false, string $logAction = 'get'): array
+    protected function getJson(string $path, array $query = [], bool $auth = false, string $logAction = 'get', array $context = []): array
     {
         $url = $this->baseUrl.$path;
-        $start = microtime(true);
         $headers = $auth ? $this->authHeaders() : $this->guestHeaders();
-        $response = Http::timeout(30)->withHeaders($headers)->get($url, $query);
-        $duration = (microtime(true) - $start) * 1000;
 
-        if (config('app.log_api_requests', false)) {
-            ApiRequestLog::create([
-                'server_id' => $this->server->id,
-                'action' => $logAction,
-                'method' => 'GET',
-                'url' => $url,
-                'status_code' => $response->status(),
-                'response_body' => substr((string) $response->body(), 0, 2000),
-                'duration_ms' => round($duration, 2),
-            ]);
-        }
+        return $this->requestGet($url, $headers, $query, $logAction, (int) config('services.fivesim.timeout', 45), $context);
+    }
 
-        if (! $response->successful()) {
+    /**
+     * @param  array<string, string>  $headers
+     * @param  array<string, mixed>  $query
+     * @param  array<string, mixed>  $context
+     * @return array<string, mixed>
+     */
+    protected function requestGet(
+        string $url,
+        array $headers,
+        array $query,
+        string $logAction,
+        int $timeoutSeconds,
+        array $context = []
+    ): array {
+        $start = microtime(true);
+
+        try {
+            $response = Http::withHeaders($headers)
+                ->connectTimeout((int) config('services.fivesim.connect_timeout', 15))
+                ->timeout($timeoutSeconds)
+                ->get($url, $query);
+
+            $durationMs = (microtime(true) - $start) * 1000;
+            $status = $response->status();
+            $rawBody = (string) $response->body();
+
+            $this->recordHttpLog($logAction, $url, $status, $rawBody, null, $durationMs, $context);
+
+            if (! $response->successful()) {
+                throw new \RuntimeException($this->customerMessageFromResponse($response));
+            }
+
+            $data = $response->json();
+
+            return is_array($data) ? $data : [];
+        } catch (ConnectionException $e) {
+            $durationMs = (microtime(true) - $start) * 1000;
+            $this->recordHttpLog($logAction, $url, 0, null, $e->getMessage(), $durationMs, $context);
+
             throw new \RuntimeException('Network error, please try again.');
+        } catch (RequestException $e) {
+            $durationMs = (microtime(true) - $start) * 1000;
+            $httpResponse = $e->response;
+            $status = $httpResponse ? $httpResponse->status() : 0;
+            $rawBody = $httpResponse ? (string) $httpResponse->body() : null;
+            $this->recordHttpLog($logAction, $url, $status, $rawBody, $e->getMessage(), $durationMs, $context);
+
+            throw new \RuntimeException(
+                $httpResponse
+                    ? $this->customerMessageFromResponse($httpResponse)
+                    : 'Network error, please try again.'
+            );
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $extra
+     */
+    protected function recordHttpLog(
+        string $action,
+        string $url,
+        int $statusCode,
+        ?string $responseBody,
+        ?string $error,
+        float $durationMs,
+        array $extra = []
+    ): void {
+        $bodySample = $responseBody !== null ? substr($responseBody, 0, 2000) : null;
+        $failed = $error !== null || $statusCode === 0 || $statusCode >= 400;
+
+        $context = array_merge([
+            'provider' => 'fivesim',
+            'action' => $action,
+            'server_id' => $this->server->id,
+            'server_name' => $this->server->name,
+            'url' => $url,
+            'status_code' => $statusCode ?: null,
+            'duration_ms' => round($durationMs, 2),
+            'connect_timeout' => (int) config('services.fivesim.connect_timeout', 15),
+            'timeout' => (int) config('services.fivesim.timeout', 45),
+        ], $extra);
+
+        if ($error !== null) {
+            $context['curl_error'] = $error;
+        }
+        if ($bodySample !== null && $bodySample !== '') {
+            $context['response_body'] = $bodySample;
         }
 
-        $data = $response->json();
+        if ($failed) {
+            Log::error('FiveSim HTTP request failed', $context);
+        } elseif (config('app.log_api_requests', false)) {
+            Log::info('FiveSim HTTP response', $context);
+        }
 
-        return is_array($data) ? $data : [];
+        if ($failed || config('app.log_api_requests', false)) {
+            try {
+                ApiRequestLog::create([
+                    'server_id' => $this->server->id,
+                    'action' => $action,
+                    'method' => 'GET',
+                    'url' => $url,
+                    'status_code' => $statusCode > 0 ? $statusCode : null,
+                    'response_body' => $bodySample,
+                    'error' => $error !== null
+                        ? substr($error, 0, 1000)
+                        : ($statusCode >= 400 ? 'HTTP '.$statusCode : null),
+                    'duration_ms' => round($durationMs, 2),
+                ]);
+            } catch (\Throwable $logException) {
+                Log::warning('FiveSim: could not write api_request_logs row', [
+                    'message' => $logException->getMessage(),
+                ]);
+            }
+        }
+    }
+
+    protected function customerMessageFromResponse(Response $response): string
+    {
+        $status = $response->status();
+        $rawBody = (string) $response->body();
+        if ($rawBody !== '') {
+            $json = $response->json();
+            if (is_array($json)) {
+                foreach (['message', 'error', 'detail', 'msg', 'reason'] as $key) {
+                    $value = $json[$key] ?? null;
+                    if (is_string($value) && trim($value) !== '') {
+                        return 'Unable to rent a number: '.trim($value);
+                    }
+                }
+            }
+        }
+
+        if ($status === 401 || $status === 403) {
+            return 'Provider authentication failed. Check the API key in Admin → Servers.';
+        }
+        if ($status === 402) {
+            return 'Provider balance is too low. Please try again later.';
+        }
+        if ($status === 404) {
+            return 'Number not available for this country/service. Try another option.';
+        }
+        if ($status >= 500) {
+            return 'Provider is temporarily unavailable. Please try again.';
+        }
+
+        return $status > 0
+            ? 'Provider returned HTTP '.$status.'. Please try again.'
+            : 'Network error, please try again.';
     }
 
     public function getBalance(): float
@@ -192,35 +326,25 @@ class FiveSimSmsService implements SmsServerInterface
 
         $path = '/v1/user/buy/activation/'.rawurlencode($country).'/'.rawurlencode($operator).'/'.rawurlencode($product);
         $url = $this->baseUrl.$path;
-        $start = microtime(true);
-        $response = Http::timeout(45)->withHeaders($this->authHeaders())->get($url, $query);
-        $duration = (microtime(true) - $start) * 1000;
 
-        if (config('app.log_api_requests', false)) {
-            ApiRequestLog::create([
-                'server_id' => $this->server->id,
-                'action' => 'order',
-                'method' => 'GET',
-                'url' => $url,
-                'status_code' => $response->status(),
-                'response_body' => substr((string) $response->body(), 0, 2000),
-                'duration_ms' => round($duration, 2),
-            ]);
-        }
-
-        if (! $response->successful()) {
-            throw new \RuntimeException('Network error, please try again.');
-        }
-
-        $data = $response->json();
-        if (! is_array($data)) {
-            throw new \RuntimeException('Network error, please try again.');
-        }
+        $data = $this->requestGet($url, $this->authHeaders(), $query, 'order', (int) config('services.fivesim.timeout', 45), [
+            'country' => $country,
+            'product' => $product,
+            'operator' => $operator,
+            'max_price' => $maxPrice,
+        ]);
 
         $orderId = $data['id'] ?? null;
         $phone = $data['phone'] ?? '';
         if ($orderId === null || $phone === '') {
-            Log::warning('Worldwide slot order unexpected response', ['keys' => array_keys($data)]);
+            Log::warning('FiveSim order unexpected response', [
+                'server_id' => $this->server->id,
+                'country' => $country,
+                'product' => $product,
+                'operator' => $operator,
+                'response_keys' => array_keys($data),
+                'response_sample' => json_encode(array_slice($data, 0, 8)),
+            ]);
 
             throw new \RuntimeException('Unable to rent a number right now. Please try again.');
         }

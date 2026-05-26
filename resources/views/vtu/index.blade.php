@@ -29,12 +29,55 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <section class="lg:col-span-2 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden"
                 x-data="{
-                    type: '{{ old('type', 'airtime') }}',
+                    type: '{{ old('type', $initialType ?? 'airtime') }}',
+                    serviceId: '{{ old('service_id', 'mtn') }}',
                     loading: false,
                     plans: [],
                     planPeriod: 'days',
                     selectedPlan: '',
                     amount: '{{ old('amount') }}',
+                    serviceGroups: {
+                        airtime: [
+                            { id: 'mtn', name: 'MTN', logo: 'MTN', classes: 'bg-yellow-400 text-slate-950' },
+                            { id: 'airtel', name: 'Airtel', logo: 'A', classes: 'bg-red-600 text-white' },
+                            { id: 'glo', name: 'Glo', logo: 'Glo', classes: 'bg-green-600 text-white' },
+                            { id: '9mobile', name: '9mobile', logo: '9', classes: 'bg-lime-500 text-slate-950' },
+                        ],
+                        data: [
+                            { id: 'mtn', name: 'MTN', logo: 'MTN', classes: 'bg-yellow-400 text-slate-950' },
+                            { id: 'airtel', name: 'Airtel', logo: 'A', classes: 'bg-red-600 text-white' },
+                            { id: 'glo', name: 'Glo', logo: 'Glo', classes: 'bg-green-600 text-white' },
+                            { id: '9mobile', name: '9mobile', logo: '9', classes: 'bg-lime-500 text-slate-950' },
+                        ],
+                        cable: [
+                            { id: 'dstv', name: 'DStv', logo: 'D', classes: 'bg-blue-600 text-white' },
+                            { id: 'gotv', name: 'GOtv', logo: 'GO', classes: 'bg-emerald-600 text-white' },
+                            { id: 'startimes', name: 'StarTimes', logo: 'ST', classes: 'bg-orange-500 text-white' },
+                        ],
+                        electricity: [
+                            { id: 'ikeja-electric', name: 'Ikeja', logo: 'IK', classes: 'bg-amber-500 text-white' },
+                            { id: 'eko-electric', name: 'Eko', logo: 'EK', classes: 'bg-cyan-600 text-white' },
+                            { id: 'abuja-electric', name: 'Abuja', logo: 'AB', classes: 'bg-violet-600 text-white' },
+                            { id: 'kano-electric', name: 'Kano', logo: 'KN', classes: 'bg-rose-600 text-white' },
+                            { id: 'portharcourt-electric', name: 'Port Harcourt', logo: 'PH', classes: 'bg-teal-600 text-white' },
+                        ],
+                    },
+                    currentServices() {
+                        return this.serviceGroups[this.type] || [];
+                    },
+                    setType(nextType) {
+                        this.type = nextType;
+                        this.plans = [];
+                        this.selectedPlan = '';
+                        this.amount = '';
+                        this.serviceId = (this.currentServices()[0] || {}).id || '';
+                        if (this.type === 'data') setTimeout(() => this.loadPlans(), 50);
+                    },
+                    setService(id) {
+                        this.serviceId = id;
+                        this.selectedPlan = '';
+                        if (this.type === 'data') this.loadPlans();
+                    },
                     planText(plan) {
                         return [
                             plan.name,
@@ -58,7 +101,7 @@
                     },
                     async loadPlans() {
                         if (this.type !== 'data') return;
-                        const network = this.$refs.serviceId?.value || '';
+                        const network = this.serviceId || '';
                         if (!network) return;
                         this.loading = true;
                         this.plans = [];
@@ -91,39 +134,25 @@
 
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         @foreach(['airtime' => 'Airtime', 'data' => 'Data', 'cable' => 'Cable TV', 'electricity' => 'Electricity'] as $key => $label)
-                            <button type="button" @click="type = '{{ $key }}'; plans = []; selectedPlan = ''; amount = ''; if(type === 'data') setTimeout(() => loadPlans(), 50)" class="min-h-[48px] rounded-2xl text-sm font-semibold transition" :class="type === '{{ $key }}' ? 'bg-mint-500 text-white shadow-lg shadow-mint-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'">{{ $label }}</button>
+                            <button type="button" @click="setType('{{ $key }}')" class="min-h-[48px] rounded-2xl text-sm font-semibold transition" :class="type === '{{ $key }}' ? 'bg-mint-500 text-white shadow-lg shadow-mint-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'">{{ $label }}</button>
                         @endforeach
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Provider / service</label>
-                            <select x-ref="serviceId" name="service_id" @change="loadPlans()" class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:border-mint-500 focus:ring-mint-500" required>
-                                <template x-if="type === 'airtime' || type === 'data'">
-                                    <optgroup label="Mobile networks">
-                                        <option value="mtn">MTN</option>
-                                        <option value="airtel">Airtel</option>
-                                        <option value="glo">Glo</option>
-                                        <option value="9mobile">9mobile</option>
-                                    </optgroup>
+                            <input type="hidden" name="service_id" x-model="serviceId" required>
+                            <div class="grid grid-cols-2 gap-2">
+                                <template x-for="service in currentServices()" :key="service.id">
+                                    <button type="button" @click="setService(service.id)" class="min-h-[58px] rounded-2xl border px-3 py-2 flex items-center gap-2 text-left transition" :class="serviceId === service.id ? 'border-mint-500 bg-mint-50 dark:bg-mint-900/20 ring-2 ring-mint-500/20' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700'">
+                                        <span class="w-9 h-9 rounded-xl flex items-center justify-center text-[11px] font-black shrink-0 shadow-sm" :class="service.classes" x-text="service.logo"></span>
+                                        <span class="min-w-0">
+                                            <span class="block text-sm font-semibold text-slate-800 dark:text-slate-100 truncate" x-text="service.name"></span>
+                                            <span class="block text-[11px] text-slate-500 dark:text-slate-400" x-text="type === 'electricity' ? 'Disco' : (type === 'cable' ? 'TV' : 'Network')"></span>
+                                        </span>
+                                    </button>
                                 </template>
-                                <template x-if="type === 'cable'">
-                                    <optgroup label="Cable TV">
-                                        <option value="dstv">DStv</option>
-                                        <option value="gotv">GOtv</option>
-                                        <option value="startimes">StarTimes</option>
-                                    </optgroup>
-                                </template>
-                                <template x-if="type === 'electricity'">
-                                    <optgroup label="Electricity">
-                                        <option value="ikeja-electric">Ikeja Electric</option>
-                                        <option value="eko-electric">Eko Electric</option>
-                                        <option value="abuja-electric">Abuja Electric</option>
-                                        <option value="kano-electric">Kano Electric</option>
-                                        <option value="portharcourt-electric">Port Harcourt Electric</option>
-                                    </optgroup>
-                                </template>
-                            </select>
+                            </div>
                             @error('service_id')<p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p>@enderror
                         </div>
 

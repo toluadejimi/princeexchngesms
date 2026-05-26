@@ -32,6 +32,9 @@ class VtuController extends Controller
             'transactions' => $transactions,
             'walletBalance' => (float) $request->user()->wallet_balance,
             'currency' => SiteSetting::displayCurrency(),
+            'initialType' => in_array($request->query('type'), ['airtime', 'data', 'cable', 'electricity'], true)
+                ? $request->query('type')
+                : 'airtime',
         ]);
     }
 

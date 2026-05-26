@@ -71,6 +71,8 @@
     </div>
 </div>
 
+@include('dashboard.partials.vtu-quick-actions')
+
 <div class="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
     <div class="px-4 sm:px-6 py-4 border-b border-slate-200 dark:border-slate-700">
         <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Rentals</h2>

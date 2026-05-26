@@ -31,6 +31,7 @@
                 x-data="{
                     type: '{{ old('type', $initialType ?? 'airtime') }}',
                     serviceId: '{{ old('service_id', 'mtn') }}',
+                    serviceOpen: false,
                     loading: false,
                     plans: [],
                     planPeriod: 'days',
@@ -38,16 +39,16 @@
                     amount: '{{ old('amount') }}',
                     serviceGroups: {
                         airtime: [
-                            { id: 'mtn', name: 'MTN', logo: 'MTN', classes: 'bg-yellow-400 text-slate-950' },
-                            { id: 'airtel', name: 'Airtel', logo: 'A', classes: 'bg-red-600 text-white' },
-                            { id: 'glo', name: 'Glo', logo: 'Glo', classes: 'bg-green-600 text-white' },
-                            { id: '9mobile', name: '9mobile', logo: '9', classes: 'bg-lime-500 text-slate-950' },
+                            { id: 'mtn', name: 'MTN', logo: '{{ asset('images/vtu/mtn.png') }}', classes: 'bg-yellow-400 text-slate-950' },
+                            { id: 'airtel', name: 'Airtel', logo: '{{ asset('images/vtu/airtel.png') }}', classes: 'bg-red-600 text-white' },
+                            { id: 'glo', name: 'Glo', logo: '{{ asset('images/vtu/glo.png') }}', classes: 'bg-green-600 text-white' },
+                            { id: '9mobile', name: '9mobile', logo: '{{ asset('images/vtu/9mobile.png') }}', classes: 'bg-lime-500 text-slate-950' },
                         ],
                         data: [
-                            { id: 'mtn', name: 'MTN', logo: 'MTN', classes: 'bg-yellow-400 text-slate-950' },
-                            { id: 'airtel', name: 'Airtel', logo: 'A', classes: 'bg-red-600 text-white' },
-                            { id: 'glo', name: 'Glo', logo: 'Glo', classes: 'bg-green-600 text-white' },
-                            { id: '9mobile', name: '9mobile', logo: '9', classes: 'bg-lime-500 text-slate-950' },
+                            { id: 'mtn', name: 'MTN', logo: '{{ asset('images/vtu/mtn.png') }}', classes: 'bg-yellow-400 text-slate-950' },
+                            { id: 'airtel', name: 'Airtel', logo: '{{ asset('images/vtu/airtel.png') }}', classes: 'bg-red-600 text-white' },
+                            { id: 'glo', name: 'Glo', logo: '{{ asset('images/vtu/glo.png') }}', classes: 'bg-green-600 text-white' },
+                            { id: '9mobile', name: '9mobile', logo: '{{ asset('images/vtu/9mobile.png') }}', classes: 'bg-lime-500 text-slate-950' },
                         ],
                         cable: [
                             { id: 'dstv', name: 'DStv', logo: 'D', classes: 'bg-blue-600 text-white' },
@@ -65,17 +66,22 @@
                     currentServices() {
                         return this.serviceGroups[this.type] || [];
                     },
+                    selectedService() {
+                        return this.currentServices().find((service) => service.id === this.serviceId) || this.currentServices()[0] || null;
+                    },
                     setType(nextType) {
                         this.type = nextType;
                         this.plans = [];
                         this.selectedPlan = '';
                         this.amount = '';
+                        this.serviceOpen = false;
                         this.serviceId = (this.currentServices()[0] || {}).id || '';
                         if (this.type === 'data') setTimeout(() => this.loadPlans(), 50);
                     },
                     setService(id) {
                         this.serviceId = id;
                         this.selectedPlan = '';
+                        this.serviceOpen = false;
                         if (this.type === 'data') this.loadPlans();
                     },
                     planText(plan) {
@@ -142,16 +148,38 @@
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Provider / service</label>
                             <input type="hidden" name="service_id" x-model="serviceId" required>
-                            <div class="grid grid-cols-2 gap-2">
-                                <template x-for="service in currentServices()" :key="service.id">
-                                    <button type="button" @click="setService(service.id)" class="min-h-[58px] rounded-2xl border px-3 py-2 flex items-center gap-2 text-left transition" :class="serviceId === service.id ? 'border-mint-500 bg-mint-50 dark:bg-mint-900/20 ring-2 ring-mint-500/20' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700'">
-                                        <span class="w-9 h-9 rounded-xl flex items-center justify-center text-[11px] font-black shrink-0 shadow-sm" :class="service.classes" x-text="service.logo"></span>
+                            <div class="relative" @click.away="serviceOpen = false">
+                                <button type="button" @click="serviceOpen = !serviceOpen" class="w-full min-h-[48px] rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 flex items-center justify-between gap-3 text-left focus:outline-none focus:ring-2 focus:ring-mint-500/30">
+                                    <span class="flex items-center gap-2 min-w-0">
+                                        <template x-if="selectedService()?.logo && String(selectedService().logo).startsWith('http')">
+                                            <img :src="selectedService().logo" :alt="selectedService().name" class="w-9 h-9 rounded-lg object-contain bg-white border border-slate-100 shrink-0">
+                                        </template>
+                                        <template x-if="!selectedService()?.logo || !String(selectedService().logo).startsWith('http')">
+                                            <span class="w-9 h-9 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0" :class="selectedService()?.classes" x-text="selectedService()?.logo"></span>
+                                        </template>
                                         <span class="min-w-0">
-                                            <span class="block text-sm font-semibold text-slate-800 dark:text-slate-100 truncate" x-text="service.name"></span>
+                                            <span class="block text-sm font-semibold text-slate-800 dark:text-slate-100 truncate" x-text="selectedService()?.name || 'Select service'"></span>
                                             <span class="block text-[11px] text-slate-500 dark:text-slate-400" x-text="type === 'electricity' ? 'Disco' : (type === 'cable' ? 'TV' : 'Network')"></span>
                                         </span>
-                                    </button>
-                                </template>
+                                    </span>
+                                    <svg class="w-4 h-4 text-slate-400 shrink-0 transition" :class="serviceOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+                                <div x-show="serviceOpen" x-cloak class="absolute z-30 mt-2 left-0 right-0 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl overflow-hidden">
+                                    <template x-for="service in currentServices()" :key="service.id">
+                                        <button type="button" @click="setService(service.id)" class="w-full px-3 py-2.5 flex items-center gap-2 text-left hover:bg-slate-50 dark:hover:bg-slate-700 transition" :class="serviceId === service.id ? 'bg-mint-50 dark:bg-mint-900/20' : ''">
+                                            <template x-if="service.logo && String(service.logo).startsWith('http')">
+                                                <img :src="service.logo" :alt="service.name" class="w-9 h-9 rounded-lg object-contain bg-white border border-slate-100 shrink-0">
+                                            </template>
+                                            <template x-if="!service.logo || !String(service.logo).startsWith('http')">
+                                                <span class="w-9 h-9 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0" :class="service.classes" x-text="service.logo"></span>
+                                            </template>
+                                            <span class="min-w-0">
+                                                <span class="block text-sm font-semibold text-slate-800 dark:text-slate-100 truncate" x-text="service.name"></span>
+                                                <span class="block text-[11px] text-slate-500 dark:text-slate-400" x-text="type === 'electricity' ? 'Disco' : (type === 'cable' ? 'TV' : 'Network')"></span>
+                                            </span>
+                                        </button>
+                                    </template>
+                                </div>
                             </div>
                             @error('service_id')<p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p>@enderror
                         </div>

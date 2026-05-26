@@ -26,8 +26,8 @@
             </div>
         @endunless
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <section class="lg:col-span-2 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden"
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <section class="lg:col-span-7 relative rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm overflow-visible"
                 x-data="{
                     type: '{{ old('type', $initialType ?? 'airtime') }}',
                     serviceId: '{{ old('service_id', 'mtn') }}',
@@ -165,18 +165,26 @@
                         if (price) this.amount = price;
                     }
                 }">
-                <div class="p-5 sm:p-6 border-b border-slate-200 dark:border-slate-700">
-                    <h2 class="text-lg font-bold text-slate-900 dark:text-white">New purchase</h2>
-                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Your wallet is debited first. If SprintPay fails, the amount is refunded automatically.</p>
+                <div class="relative overflow-hidden rounded-t-3xl p-5 sm:p-6 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800/90 dark:to-slate-900">
+                    <div class="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-mint-500/10 dark:bg-mint-500/5"></div>
+                    <div class="relative flex items-start gap-3">
+                        <span class="w-11 h-11 rounded-2xl bg-mint-100 dark:bg-mint-900/40 text-mint-600 dark:text-mint-300 flex items-center justify-center shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 10v-1m9-4a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </span>
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-900 dark:text-white">New VTU purchase</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Pay instantly from your wallet. Failed provider requests are refunded automatically.</p>
+                        </div>
+                    </div>
                 </div>
 
-                <form method="POST" action="{{ route('vtu.purchase') }}" class="p-5 sm:p-6 space-y-5">
+                <form method="POST" action="{{ route('vtu.purchase') }}" class="p-5 sm:p-6 space-y-6">
                     @csrf
                     <input type="hidden" name="type" :value="type">
 
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80">
                         @foreach(['airtime' => 'Airtime', 'data' => 'Data', 'cable' => 'Cable TV', 'electricity' => 'Electricity'] as $key => $label)
-                            <button type="button" @click="setType('{{ $key }}')" class="min-h-[48px] rounded-2xl text-sm font-semibold transition" :class="type === '{{ $key }}' ? 'bg-mint-500 text-white shadow-lg shadow-mint-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'">{{ $label }}</button>
+                            <button type="button" @click="setType('{{ $key }}')" class="min-h-[46px] rounded-xl text-sm font-semibold transition" :class="type === '{{ $key }}' ? 'bg-mint-500 text-white shadow-lg shadow-mint-500/20' : 'text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700'">{{ $label }}</button>
                         @endforeach
                     </div>
 
@@ -313,25 +321,45 @@
                         @error('phone')<p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p>@enderror
                     </div>
 
-                    <button type="submit" @disabled(!($enabled && $configured)) class="w-full min-h-[52px] rounded-2xl bg-gradient-to-r from-mint-500 to-teal-500 hover:from-mint-600 hover:to-teal-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold shadow-lg shadow-mint-500/20 transition">
-                        Pay from wallet
+                    <button type="submit" @disabled(!($enabled && $configured)) class="w-full min-h-[54px] rounded-2xl bg-gradient-to-r from-mint-500 to-teal-500 hover:from-mint-600 hover:to-teal-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold shadow-lg shadow-mint-500/20 transition active:scale-[0.99]">
+                        Pay securely from wallet
                     </button>
                 </form>
             </section>
 
-            <aside class="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm p-5 sm:p-6">
-                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Recent VTU</h2>
-                <div class="space-y-3">
+            <aside class="lg:col-span-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                <div class="p-5 sm:p-6 border-b border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/40">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900 dark:text-white">Recent VTU</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Latest wallet-funded bill payments</p>
+                        </div>
+                        <span class="inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5h6M9 9h6m-6 4h6m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        </span>
+                    </div>
+                </div>
+                <div class="p-4 sm:p-5 space-y-3 max-h-[520px] overflow-y-auto">
                     @forelse($transactions as $tx)
-                        <div class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 p-4">
+                        <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-4 hover:bg-white dark:hover:bg-slate-800 transition">
                             <div class="flex items-start justify-between gap-3">
-                                <div>
-                                    <p class="text-sm font-semibold text-slate-900 dark:text-white uppercase">{{ $tx->type }}</p>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ $tx->recipient }} · {{ $tx->reference }}</p>
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-2">
+                                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-mint-100 dark:bg-mint-900/30 text-mint-700 dark:text-mint-300 shrink-0">
+                                            {{ strtoupper(substr($tx->type, 0, 1)) }}
+                                        </span>
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-bold text-slate-900 dark:text-white uppercase">{{ $tx->type }}</p>
+                                            <p class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ $tx->recipient }}</p>
+                                        </div>
+                                    </div>
                                 </div>
                                 <span class="px-2 py-1 rounded-lg text-[11px] font-semibold {{ $tx->status === 'successful' ? 'bg-mint-100 text-mint-800 dark:bg-mint-900/40 dark:text-mint-200' : ($tx->status === 'refunded' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200' : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300') }}">{{ $tx->status }}</span>
                             </div>
-                            <p class="mt-3 font-bold text-slate-900 dark:text-white">{{ \App\Models\SiteSetting::formatWalletAmount((float) $tx->wallet_debit) }}</p>
+                            <div class="mt-3 flex items-end justify-between gap-3">
+                                <p class="font-bold text-slate-900 dark:text-white">{{ \App\Models\SiteSetting::formatWalletAmount((float) $tx->wallet_debit) }}</p>
+                                <p class="text-[11px] text-slate-400 dark:text-slate-500 truncate max-w-[11rem]" title="{{ $tx->reference }}">{{ $tx->reference }}</p>
+                            </div>
                             @if($tx->token)
                                 <p class="mt-2 text-xs text-mint-700 dark:text-mint-300 break-words">Token: {{ $tx->token }}</p>
                             @endif

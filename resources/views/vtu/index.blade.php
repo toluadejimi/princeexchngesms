@@ -32,9 +32,12 @@
                     type: '{{ old('type', $initialType ?? 'airtime') }}',
                     serviceId: '{{ old('service_id', 'mtn') }}',
                     serviceOpen: false,
+                    serviceSearch: '',
                     loading: false,
                     plans: [],
                     planPeriod: 'days',
+                    planOpen: false,
+                    planSearch: '',
                     selectedPlan: '',
                     amount: '{{ old('amount') }}',
                     serviceGroups: {
@@ -66,6 +69,14 @@
                     currentServices() {
                         return this.serviceGroups[this.type] || [];
                     },
+                    filteredServices() {
+                        const q = (this.serviceSearch || '').toLowerCase().trim();
+                        if (!q) return this.currentServices();
+                        return this.currentServices().filter((service) => {
+                            return String(service.name || '').toLowerCase().includes(q)
+                                || String(service.id || '').toLowerCase().includes(q);
+                        });
+                    },
                     selectedService() {
                         return this.currentServices().find((service) => service.id === this.serviceId) || this.currentServices()[0] || null;
                     },
@@ -75,6 +86,7 @@
                         this.selectedPlan = '';
                         this.amount = '';
                         this.serviceOpen = false;
+                        this.serviceSearch = '';
                         this.serviceId = (this.currentServices()[0] || {}).id || '';
                         if (this.type === 'data') setTimeout(() => this.loadPlans(), 50);
                     },
@@ -82,6 +94,7 @@
                         this.serviceId = id;
                         this.selectedPlan = '';
                         this.serviceOpen = false;
+                        this.serviceSearch = '';
                         if (this.type === 'data') this.loadPlans();
                     },
                     planText(plan) {
@@ -103,7 +116,26 @@
                         return /day|daily|24\s*hour|48\s*hour|hour/.test(text) && !/week|month|year|7\s*day|14\s*day|28\s*day|30\s*day|31\s*day|365\s*day/.test(text);
                     },
                     filteredPlans() {
-                        return this.plans.filter((plan) => this.planMatchesPeriod(plan));
+                        const q = (this.planSearch || '').toLowerCase().trim();
+                        return this.plans.filter((plan) => {
+                            const text = this.planText(plan);
+                            return this.planMatchesPeriod(plan) && (!q || text.includes(q));
+                        });
+                    },
+                    planCode(plan) {
+                        return plan.variation_code || plan.variationCode || plan.code || plan.id || '';
+                    },
+                    planName(plan) {
+                        return plan.name || plan.variation_name || plan.plan || 'Data plan';
+                    },
+                    planPrice(plan) {
+                        return plan.variation_amount || plan.amount || plan.price || plan.cost || '';
+                    },
+                    planValidity(plan) {
+                        return plan.validity || plan.duration || '';
+                    },
+                    selectedPlanObject() {
+                        return this.plans.find((plan) => String(this.planCode(plan)) === String(this.selectedPlan)) || null;
                     },
                     async loadPlans() {
                         if (this.type !== 'data') return;
@@ -112,6 +144,8 @@
                         this.loading = true;
                         this.plans = [];
                         this.selectedPlan = '';
+                        this.planOpen = false;
+                        this.planSearch = '';
                         try {
                             const res = await fetch(`{{ url('/api/vtu/catalog/data') }}?network=${encodeURIComponent(network)}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
                             const json = await res.json();
@@ -124,8 +158,10 @@
                         }
                     },
                     choosePlan(plan) {
-                        this.selectedPlan = plan.variation_code || plan.variationCode || plan.code || plan.id || '';
-                        const price = plan.variation_amount || plan.amount || plan.price || plan.cost;
+                        this.selectedPlan = this.planCode(plan);
+                        this.planOpen = false;
+                        this.planSearch = '';
+                        const price = this.planPrice(plan);
                         if (price) this.amount = price;
                     }
                 }">
@@ -148,7 +184,7 @@
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Provider / service</label>
                             <input type="hidden" name="service_id" x-model="serviceId" required>
-                            <div class="relative" @click.away="serviceOpen = false">
+                            <div class="relative" @click.away="serviceOpen = false; serviceSearch = ''">
                                 <button type="button" @click="serviceOpen = !serviceOpen" class="w-full min-h-[48px] rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 flex items-center justify-between gap-3 text-left focus:outline-none focus:ring-2 focus:ring-mint-500/30">
                                         <span class="flex items-center gap-3 min-w-0">
                                         <template x-if="selectedService()?.logo && String(selectedService().logo).startsWith('http')">
@@ -166,8 +202,12 @@
                                     </span>
                                     <svg class="w-4 h-4 text-slate-400 shrink-0 transition" :class="serviceOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
-                                <div x-show="serviceOpen" x-cloak class="absolute z-30 mt-2 left-0 right-0 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl overflow-hidden max-h-64 overflow-y-auto">
-                                    <template x-for="service in currentServices()" :key="service.id">
+                                <div x-show="serviceOpen" x-cloak class="absolute z-30 mt-2 left-0 right-0 sm:min-w-[20rem] rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl overflow-hidden">
+                                    <div class="p-2 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 sticky top-0 z-10">
+                                        <input type="search" x-model="serviceSearch" @keydown.escape.stop="serviceOpen = false; serviceSearch = ''" placeholder="Search service..." class="w-full h-10 rounded-xl border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm focus:border-mint-500 focus:ring-mint-500">
+                                    </div>
+                                    <div class="max-h-64 overflow-y-auto">
+                                    <template x-for="service in filteredServices()" :key="service.id">
                                         <button type="button" @click="setService(service.id)" class="w-full px-3 py-2.5 flex items-center gap-3 text-left hover:bg-slate-50 dark:hover:bg-slate-700 transition" :class="serviceId === service.id ? 'bg-mint-50 dark:bg-mint-900/20' : ''">
                                             <template x-if="service.logo && String(service.logo).startsWith('http')">
                                                 <span class="w-10 h-10 rounded-xl bg-white border border-slate-100 shrink-0 flex items-center justify-center overflow-hidden p-1">
@@ -178,11 +218,13 @@
                                                 <span class="w-9 h-9 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0" :class="service.classes" x-text="service.logo"></span>
                                             </template>
                                             <span class="min-w-0">
-                                                <span class="block text-sm font-semibold text-slate-800 dark:text-slate-100 truncate" x-text="service.name"></span>
+                                                <span class="block text-sm font-semibold text-slate-800 dark:text-slate-100 whitespace-normal leading-tight" x-text="service.name"></span>
                                                 <span class="block text-[11px] text-slate-500 dark:text-slate-400" x-text="type === 'electricity' ? 'Disco' : (type === 'cable' ? 'TV' : 'Network')"></span>
                                             </span>
                                         </button>
                                     </template>
+                                    <p x-show="filteredServices().length === 0" x-cloak class="px-3 py-4 text-sm text-slate-500 dark:text-slate-400">No service found.</p>
+                                    </div>
                                 </div>
                             </div>
                             @error('service_id')<p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p>@enderror
@@ -206,12 +248,34 @@
                             <button type="button" @click="planPeriod = 'month'; selectedPlan = ''" class="min-h-[40px] rounded-xl text-xs font-semibold transition" :class="planPeriod === 'month' ? 'bg-mint-500 text-white' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'">Month</button>
                             <button type="button" @click="planPeriod = 'year'; selectedPlan = ''" class="min-h-[40px] rounded-xl text-xs font-semibold transition" :class="planPeriod === 'year' ? 'bg-mint-500 text-white' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'">Year</button>
                         </div>
-                        <select x-model="selectedPlan" :disabled="type !== 'data'" @change="const p = plans.find((item) => String(item.variation_code || item.variationCode || item.code || item.id) === String(selectedPlan)); if (p) choosePlan(p)" class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 focus:border-mint-500 focus:ring-mint-500">
-                            <option value="">Select a plan</option>
-                            <template x-for="plan in filteredPlans()" :key="plan.variation_code || plan.code || plan.id || plan.name">
-                                <option :value="plan.variation_code || plan.variationCode || plan.code || plan.id" x-text="`${plan.name || plan.variation_name || plan.plan || 'Plan'} ${plan.variation_amount || plan.amount || plan.price ? '- ₦' + (plan.variation_amount || plan.amount || plan.price) : ''}`"></option>
-                            </template>
-                        </select>
+                        <div class="relative" @click.away="planOpen = false; planSearch = ''">
+                            <button type="button" :disabled="type !== 'data'" @click="planOpen = !planOpen" class="w-full min-h-[50px] rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 flex items-center justify-between gap-3 text-left focus:outline-none focus:ring-2 focus:ring-mint-500/30 disabled:opacity-60">
+                                <span class="min-w-0">
+                                    <span class="block text-sm font-semibold text-slate-800 dark:text-slate-100 truncate" x-text="selectedPlanObject() ? planName(selectedPlanObject()) : 'Select a data plan'"></span>
+                                    <span class="block text-xs text-slate-500 dark:text-slate-400 truncate" x-text="selectedPlanObject() ? `${planValidity(selectedPlanObject()) || 'Data bundle'} ${planPrice(selectedPlanObject()) ? '· ₦' + planPrice(selectedPlanObject()) : ''}` : 'Choose from available bundles'"></span>
+                                </span>
+                                <svg class="w-4 h-4 text-slate-400 shrink-0 transition" :class="planOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <div x-show="planOpen" x-cloak class="absolute z-30 mt-2 left-0 right-0 sm:min-w-[28rem] rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl overflow-hidden">
+                                <div class="p-2 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 sticky top-0 z-10">
+                                    <input type="search" x-model="planSearch" @keydown.escape.stop="planOpen = false; planSearch = ''" placeholder="Search data plan..." class="w-full h-10 rounded-xl border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm focus:border-mint-500 focus:ring-mint-500">
+                                </div>
+                                <div class="max-h-72 overflow-y-auto p-2 space-y-1">
+                                    <template x-for="plan in filteredPlans()" :key="planCode(plan) || planName(plan)">
+                                        <button type="button" @click="choosePlan(plan)" class="w-full rounded-xl px-3 py-2.5 text-left hover:bg-slate-50 dark:hover:bg-slate-700 transition border" :class="String(selectedPlan) === String(planCode(plan)) ? 'border-mint-300 bg-mint-50 dark:border-mint-700 dark:bg-mint-900/20' : 'border-transparent'">
+                                            <span class="flex items-start justify-between gap-3">
+                                                <span class="min-w-0">
+                                                    <span class="block text-sm font-semibold text-slate-800 dark:text-slate-100 leading-tight" x-text="planName(plan)"></span>
+                                                    <span class="block text-xs text-slate-500 dark:text-slate-400 mt-0.5" x-text="planValidity(plan) || planCode(plan)"></span>
+                                                </span>
+                                                <span x-show="planPrice(plan)" class="shrink-0 inline-flex items-center rounded-lg bg-mint-100 dark:bg-mint-900/40 px-2.5 py-1 text-xs font-bold text-mint-700 dark:text-mint-300" x-text="'₦' + planPrice(plan)"></span>
+                                            </span>
+                                        </button>
+                                    </template>
+                                    <p x-show="filteredPlans().length === 0" x-cloak class="px-3 py-5 text-sm text-slate-500 dark:text-slate-400 text-center">No data plan found.</p>
+                                </div>
+                            </div>
+                        </div>
                         <input type="hidden" name="variation_code" x-model="selectedPlan" :disabled="type !== 'data'">
                         <p x-show="!loading && plans.length > 0 && filteredPlans().length === 0" x-cloak class="mt-3 text-xs text-amber-600 dark:text-amber-400">
                             No plans found in this duration. Try another duration.

@@ -32,8 +32,30 @@
                     type: '{{ old('type', 'airtime') }}',
                     loading: false,
                     plans: [],
+                    planPeriod: 'days',
                     selectedPlan: '',
                     amount: '{{ old('amount') }}',
+                    planText(plan) {
+                        return [
+                            plan.name,
+                            plan.variation_name,
+                            plan.plan,
+                            plan.validity,
+                            plan.duration,
+                            plan.description,
+                        ].filter(Boolean).join(' ').toLowerCase();
+                    },
+                    planMatchesPeriod(plan) {
+                        const text = this.planText(plan);
+                        if (!text) return true;
+                        if (this.planPeriod === 'year') return /year|yearly|365\s*day/.test(text);
+                        if (this.planPeriod === 'month') return /month|monthly|28\s*day|30\s*day|31\s*day/.test(text);
+                        if (this.planPeriod === 'week') return /week|weekly|7\s*day|14\s*day/.test(text);
+                        return /day|daily|24\s*hour|48\s*hour|hour/.test(text) && !/week|month|year|7\s*day|14\s*day|28\s*day|30\s*day|31\s*day|365\s*day/.test(text);
+                    },
+                    filteredPlans() {
+                        return this.plans.filter((plan) => this.planMatchesPeriod(plan));
+                    },
                     async loadPlans() {
                         if (this.type !== 'data') return;
                         const network = this.$refs.serviceId?.value || '';
@@ -117,13 +139,22 @@
                             <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">Data plan</p>
                             <span x-show="loading" class="text-xs text-slate-500">Loading plans...</span>
                         </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                            <button type="button" @click="planPeriod = 'days'; selectedPlan = ''" class="min-h-[40px] rounded-xl text-xs font-semibold transition" :class="planPeriod === 'days' ? 'bg-mint-500 text-white' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'">Days</button>
+                            <button type="button" @click="planPeriod = 'week'; selectedPlan = ''" class="min-h-[40px] rounded-xl text-xs font-semibold transition" :class="planPeriod === 'week' ? 'bg-mint-500 text-white' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'">Week</button>
+                            <button type="button" @click="planPeriod = 'month'; selectedPlan = ''" class="min-h-[40px] rounded-xl text-xs font-semibold transition" :class="planPeriod === 'month' ? 'bg-mint-500 text-white' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'">Month</button>
+                            <button type="button" @click="planPeriod = 'year'; selectedPlan = ''" class="min-h-[40px] rounded-xl text-xs font-semibold transition" :class="planPeriod === 'year' ? 'bg-mint-500 text-white' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'">Year</button>
+                        </div>
                         <select x-model="selectedPlan" :disabled="type !== 'data'" @change="const p = plans.find((item) => String(item.variation_code || item.variationCode || item.code || item.id) === String(selectedPlan)); if (p) choosePlan(p)" class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 focus:border-mint-500 focus:ring-mint-500">
-                            <option value="">Select a plan, or type code below</option>
-                            <template x-for="plan in plans" :key="plan.variation_code || plan.code || plan.id || plan.name">
+                            <option value="">Select a plan</option>
+                            <template x-for="plan in filteredPlans()" :key="plan.variation_code || plan.code || plan.id || plan.name">
                                 <option :value="plan.variation_code || plan.variationCode || plan.code || plan.id" x-text="`${plan.name || plan.variation_name || plan.plan || 'Plan'} ${plan.variation_amount || plan.amount || plan.price ? '- ₦' + (plan.variation_amount || plan.amount || plan.price) : ''}`"></option>
                             </template>
                         </select>
-                        <input type="text" name="variation_code" x-model="selectedPlan" :disabled="type !== 'data'" class="mt-3 w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 focus:border-mint-500 focus:ring-mint-500" placeholder="Variation code (if plan list is empty)">
+                        <input type="hidden" name="variation_code" x-model="selectedPlan" :disabled="type !== 'data'">
+                        <p x-show="!loading && plans.length > 0 && filteredPlans().length === 0" x-cloak class="mt-3 text-xs text-amber-600 dark:text-amber-400">
+                            No plans found in this duration. Try another duration.
+                        </p>
                     </div>
 
                     <div x-show="type === 'cable'" x-cloak class="grid grid-cols-1 sm:grid-cols-2 gap-4">

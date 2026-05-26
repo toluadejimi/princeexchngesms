@@ -146,7 +146,12 @@ class SprintPayVtuService
         foreach (['message', 'response_description', 'description', 'error', 'detail'] as $key) {
             $value = $data[$key] ?? null;
             if (is_string($value) && trim($value) !== '') {
-                return trim($value);
+                $message = trim($value);
+                if (str_contains(strtolower($message), 'insufficient fund')) {
+                    return 'VTU provider wallet has insufficient funds. Please contact admin or fund the SprintPay merchant wallet.';
+                }
+
+                return $message;
             }
         }
 

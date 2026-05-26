@@ -150,10 +150,12 @@
                             <input type="hidden" name="service_id" x-model="serviceId" required>
                             <div class="relative" @click.away="serviceOpen = false">
                                 <button type="button" @click="serviceOpen = !serviceOpen" class="w-full min-h-[48px] rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 flex items-center justify-between gap-3 text-left focus:outline-none focus:ring-2 focus:ring-mint-500/30">
-                                    <span class="flex items-center gap-2 min-w-0">
+                                        <span class="flex items-center gap-3 min-w-0">
                                         <template x-if="selectedService()?.logo && String(selectedService().logo).startsWith('http')">
-                                            <img :src="selectedService().logo" :alt="selectedService().name" class="w-9 h-9 rounded-lg object-contain bg-white border border-slate-100 shrink-0">
-                                        </template>
+                                            <span class="w-10 h-10 rounded-xl bg-white border border-slate-100 shrink-0 flex items-center justify-center overflow-hidden p-1">
+                                                <img :src="selectedService().logo" :alt="selectedService().name" class="max-w-full max-h-full object-contain">
+                                            </span>
+                                            </template>
                                         <template x-if="!selectedService()?.logo || !String(selectedService().logo).startsWith('http')">
                                             <span class="w-9 h-9 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0" :class="selectedService()?.classes" x-text="selectedService()?.logo"></span>
                                         </template>
@@ -164,11 +166,13 @@
                                     </span>
                                     <svg class="w-4 h-4 text-slate-400 shrink-0 transition" :class="serviceOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
-                                <div x-show="serviceOpen" x-cloak class="absolute z-30 mt-2 left-0 right-0 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl overflow-hidden">
+                                <div x-show="serviceOpen" x-cloak class="absolute z-30 mt-2 left-0 right-0 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl overflow-hidden max-h-64 overflow-y-auto">
                                     <template x-for="service in currentServices()" :key="service.id">
-                                        <button type="button" @click="setService(service.id)" class="w-full px-3 py-2.5 flex items-center gap-2 text-left hover:bg-slate-50 dark:hover:bg-slate-700 transition" :class="serviceId === service.id ? 'bg-mint-50 dark:bg-mint-900/20' : ''">
+                                        <button type="button" @click="setService(service.id)" class="w-full px-3 py-2.5 flex items-center gap-3 text-left hover:bg-slate-50 dark:hover:bg-slate-700 transition" :class="serviceId === service.id ? 'bg-mint-50 dark:bg-mint-900/20' : ''">
                                             <template x-if="service.logo && String(service.logo).startsWith('http')">
-                                                <img :src="service.logo" :alt="service.name" class="w-9 h-9 rounded-lg object-contain bg-white border border-slate-100 shrink-0">
+                                                <span class="w-10 h-10 rounded-xl bg-white border border-slate-100 shrink-0 flex items-center justify-center overflow-hidden p-1">
+                                                    <img :src="service.logo" :alt="service.name" class="max-w-full max-h-full object-contain">
+                                                </span>
                                             </template>
                                             <template x-if="!service.logo || !String(service.logo).startsWith('http')">
                                                 <span class="w-9 h-9 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0" :class="service.classes" x-text="service.logo"></span>

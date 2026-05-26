@@ -55,7 +55,7 @@ class DashboardController extends Controller
         $user = $request->user();
         $rentalService->expireOverdueRentalsForUser($user->id);
 
-        $status = (string) $request->query('status', 'active');
+        $status = (string) $request->query('status', 'all');
         $query = Rental::where('user_id', $user->id)->with('server')->latest();
         if ($request->filled('server')) {
             $query->where('server_id', $request->query('server'));
@@ -68,7 +68,7 @@ class DashboardController extends Controller
             $query->where('status', $status);
         }
 
-        $rentals = $query->paginate(15)
+        $rentals = $query->paginate(3)
             ->withPath(route('dashboard'))
             ->withQueryString();
 

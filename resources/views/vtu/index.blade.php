@@ -12,7 +12,35 @@
         </div>
     </x-slot>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+    <style>
+        .vtu-shell { max-width: 1120px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+        .vtu-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(320px, .85fr); gap: 1.25rem; align-items: start; }
+        .vtu-panel { border-radius: 1.5rem; border: 1px solid rgb(226 232 240); background: #fff; box-shadow: 0 8px 24px rgba(15, 23, 42, .04); overflow: hidden; }
+        .dark .vtu-panel { border-color: rgb(51 65 85); background: rgb(15 23 42); box-shadow: none; }
+        .vtu-panel-header { padding: 1.25rem; border-bottom: 1px solid rgb(226 232 240); background: linear-gradient(135deg, rgb(248 250 252), #fff); }
+        .dark .vtu-panel-header { border-color: rgb(51 65 85); background: linear-gradient(135deg, rgba(30, 41, 59, .9), rgb(15 23 42)); }
+        .vtu-form-body { padding: 1.25rem; }
+        .vtu-field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .vtu-input { width: 100%; min-height: 44px; border-radius: .9rem; border: 1px solid rgb(203 213 225); background: #fff; color: rgb(15 23 42); padding: .65rem .85rem; font-size: .875rem; }
+        .dark .vtu-input { border-color: rgb(71 85 105); background: rgb(30 41 59); color: rgb(241 245 249); }
+        .vtu-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: .35rem; padding: .35rem; border-radius: 1rem; background: rgb(241 245 249); border: 1px solid rgb(226 232 240); }
+        .dark .vtu-tabs { background: rgba(30, 41, 59, .8); border-color: rgb(51 65 85); }
+        .vtu-tab { min-height: 42px; border-radius: .8rem; font-size: .8rem; font-weight: 700; transition: .15s ease; }
+        .vtu-service-button { width: 100%; min-height: 50px; border-radius: .9rem; border: 1px solid rgb(203 213 225); background: #fff; padding: .5rem .75rem; display: flex; align-items: center; justify-content: space-between; gap: .75rem; text-align: left; }
+        .dark .vtu-service-button { border-color: rgb(71 85 105); background: rgb(30 41 59); }
+        .vtu-history-list { padding: 1rem; display: grid; gap: .75rem; max-height: 620px; overflow-y: auto; }
+        .vtu-history-item { border-radius: 1rem; border: 1px solid rgb(226 232 240); background: rgb(248 250 252); padding: .9rem; }
+        .dark .vtu-history-item { border-color: rgb(51 65 85); background: rgba(30, 41, 59, .72); }
+        @media (max-width: 960px) {
+            .vtu-layout { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 640px) {
+            .vtu-shell { padding: 1rem .75rem 2rem; }
+            .vtu-field-grid, .vtu-tabs { grid-template-columns: 1fr; }
+        }
+    </style>
+
+    <div class="vtu-shell space-y-5">
         @if (session('message'))
             <div class="rounded-2xl bg-mint-50 dark:bg-mint-900/20 border border-mint-200 dark:border-mint-800 px-4 sm:px-5 py-3.5 text-mint-800 dark:text-mint-200 text-sm font-medium">{{ session('message') }}</div>
         @endif
@@ -26,8 +54,8 @@
             </div>
         @endunless
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            <section class="lg:col-span-7 relative rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm overflow-visible"
+        <div class="vtu-layout">
+            <section class="vtu-panel relative overflow-visible"
                 x-data="{
                     type: '{{ old('type', $initialType ?? 'airtime') }}',
                     serviceId: '{{ old('service_id', 'mtn') }}',
@@ -165,7 +193,7 @@
                         if (price) this.amount = price;
                     }
                 }">
-                <div class="relative overflow-hidden rounded-t-3xl p-5 sm:p-6 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800/90 dark:to-slate-900">
+                <div class="vtu-panel-header relative overflow-hidden">
                     <div class="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-mint-500/10 dark:bg-mint-500/5"></div>
                     <div class="relative flex items-start gap-3">
                         <span class="w-11 h-11 rounded-2xl bg-mint-100 dark:bg-mint-900/40 text-mint-600 dark:text-mint-300 flex items-center justify-center shrink-0">
@@ -178,22 +206,22 @@
                     </div>
                 </div>
 
-                <form method="POST" action="{{ route('vtu.purchase') }}" class="p-5 sm:p-6 space-y-6">
+                <form method="POST" action="{{ route('vtu.purchase') }}" class="vtu-form-body space-y-5">
                     @csrf
                     <input type="hidden" name="type" :value="type">
 
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80">
+                    <div class="vtu-tabs">
                         @foreach(['airtime' => 'Airtime', 'data' => 'Data', 'cable' => 'Cable TV', 'electricity' => 'Electricity'] as $key => $label)
-                            <button type="button" @click="setType('{{ $key }}')" class="min-h-[46px] rounded-xl text-sm font-semibold transition" :class="type === '{{ $key }}' ? 'bg-mint-500 text-white shadow-lg shadow-mint-500/20' : 'text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700'">{{ $label }}</button>
+                            <button type="button" @click="setType('{{ $key }}')" class="vtu-tab" :class="type === '{{ $key }}' ? 'bg-mint-500 text-white shadow-lg shadow-mint-500/20' : 'text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700'">{{ $label }}</button>
                         @endforeach
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="vtu-field-grid">
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Provider / service</label>
                             <input type="hidden" name="service_id" x-model="serviceId" required>
                             <div class="relative" @click.away="serviceOpen = false; serviceSearch = ''">
-                                <button type="button" @click="serviceOpen = !serviceOpen" class="w-full min-h-[48px] rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 flex items-center justify-between gap-3 text-left focus:outline-none focus:ring-2 focus:ring-mint-500/30">
+                                <button type="button" @click="serviceOpen = !serviceOpen" class="vtu-service-button focus:outline-none focus:ring-2 focus:ring-mint-500/30">
                                         <span class="flex items-center gap-3 min-w-0">
                                         <template x-if="selectedService()?.logo && String(selectedService().logo).startsWith('http')">
                                             <span class="w-10 h-10 rounded-xl bg-white border border-slate-100 shrink-0 flex items-center justify-center overflow-hidden p-1">
@@ -240,7 +268,7 @@
 
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Amount</label>
-                            <input type="number" step="1" min="50" name="amount" x-model="amount" value="{{ old('amount') }}" class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:border-mint-500 focus:ring-mint-500" required>
+                            <input type="number" step="1" min="50" name="amount" x-model="amount" value="{{ old('amount') }}" class="vtu-input focus:border-mint-500 focus:ring-mint-500" required>
                             @error('amount')<p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p>@enderror
                         </div>
                     </div>
@@ -257,7 +285,7 @@
                             <button type="button" @click="planPeriod = 'year'; selectedPlan = ''" class="min-h-[40px] rounded-xl text-xs font-semibold transition" :class="planPeriod === 'year' ? 'bg-mint-500 text-white' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'">Year</button>
                         </div>
                         <div class="relative" @click.away="planOpen = false; planSearch = ''">
-                            <button type="button" :disabled="type !== 'data'" @click="planOpen = !planOpen" class="w-full min-h-[50px] rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 flex items-center justify-between gap-3 text-left focus:outline-none focus:ring-2 focus:ring-mint-500/30 disabled:opacity-60">
+                            <button type="button" :disabled="type !== 'data'" @click="planOpen = !planOpen" class="vtu-service-button focus:outline-none focus:ring-2 focus:ring-mint-500/30 disabled:opacity-60">
                                 <span class="min-w-0">
                                     <span class="block text-sm font-semibold text-slate-800 dark:text-slate-100 truncate" x-text="selectedPlanObject() ? planName(selectedPlanObject()) : 'Select a data plan'"></span>
                                     <span class="block text-xs text-slate-500 dark:text-slate-400 truncate" x-text="selectedPlanObject() ? `${planValidity(selectedPlanObject()) || 'Data bundle'} ${planPrice(selectedPlanObject()) ? '· ₦' + planPrice(selectedPlanObject()) : ''}` : 'Choose from available bundles'"></span>
@@ -293,22 +321,22 @@
                     <div x-show="type === 'cable'" x-cloak class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Package code</label>
-                            <input type="text" name="variation_code" :disabled="type !== 'cable'" class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:border-mint-500 focus:ring-mint-500" placeholder="e.g. dstv-yanga">
+                            <input type="text" name="variation_code" :disabled="type !== 'cable'" class="vtu-input focus:border-mint-500 focus:ring-mint-500" placeholder="e.g. dstv-yanga">
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Smartcard / IUC</label>
-                            <input type="text" name="billers_code" :disabled="type !== 'cable'" class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:border-mint-500 focus:ring-mint-500">
+                            <input type="text" name="billers_code" :disabled="type !== 'cable'" class="vtu-input focus:border-mint-500 focus:ring-mint-500">
                         </div>
                     </div>
 
                     <div x-show="type === 'electricity'" x-cloak class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Meter number</label>
-                            <input type="text" name="billers_code" :disabled="type !== 'electricity'" class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:border-mint-500 focus:ring-mint-500">
+                            <input type="text" name="billers_code" :disabled="type !== 'electricity'" class="vtu-input focus:border-mint-500 focus:ring-mint-500">
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Meter type</label>
-                            <select name="meter_type" :disabled="type !== 'electricity'" class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:border-mint-500 focus:ring-mint-500">
+                            <select name="meter_type" :disabled="type !== 'electricity'" class="vtu-input focus:border-mint-500 focus:ring-mint-500">
                                 <option value="prepaid">Prepaid</option>
                                 <option value="postpaid">Postpaid</option>
                             </select>
@@ -317,7 +345,7 @@
 
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Phone number</label>
-                        <input type="text" name="phone" value="{{ old('phone') }}" class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:border-mint-500 focus:ring-mint-500" placeholder="08012345678">
+                        <input type="text" name="phone" value="{{ old('phone') }}" class="vtu-input focus:border-mint-500 focus:ring-mint-500" placeholder="08012345678">
                         @error('phone')<p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p>@enderror
                     </div>
 
@@ -327,8 +355,8 @@
                 </form>
             </section>
 
-            <aside class="lg:col-span-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-                <div class="p-5 sm:p-6 border-b border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/40">
+            <aside class="vtu-panel">
+                <div class="vtu-panel-header">
                     <div class="flex items-center justify-between gap-3">
                         <div>
                             <h2 class="text-lg font-bold text-slate-900 dark:text-white">Recent VTU</h2>
@@ -339,9 +367,9 @@
                         </span>
                     </div>
                 </div>
-                <div class="p-4 sm:p-5 space-y-3 max-h-[520px] overflow-y-auto">
+                <div class="vtu-history-list">
                     @forelse($transactions as $tx)
-                        <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-4 hover:bg-white dark:hover:bg-slate-800 transition">
+                        <div class="vtu-history-item hover:bg-white dark:hover:bg-slate-800 transition">
                             <div class="flex items-start justify-between gap-3">
                                 <div class="min-w-0">
                                     <div class="flex items-center gap-2">

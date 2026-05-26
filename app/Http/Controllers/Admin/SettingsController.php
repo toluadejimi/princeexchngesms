@@ -45,6 +45,10 @@ class SettingsController extends Controller
             'login_popup_enabled' => SiteSetting::get('login_popup_enabled', '0'),
             'login_popup_title' => SiteSetting::get('login_popup_title', ''),
             'login_popup_message' => SiteSetting::get('login_popup_message', ''),
+            'vtu_enabled' => SiteSetting::get('vtu_enabled', '0'),
+            'vtu_sprintpay_base_url' => SiteSetting::get('vtu_sprintpay_base_url', config('services.sprintpay.vtu_base_url')),
+            'vtu_sprintpay_key' => SiteSetting::get('vtu_sprintpay_key', config('services.sprintpay.vtu_key', '')),
+            'vtu_secret_set' => (bool) SiteSetting::getEncrypted('vtu_sprintpay_secret', config('services.sprintpay.vtu_secret')),
         ]);
     }
 
@@ -106,6 +110,10 @@ class SettingsController extends Controller
             'login_popup_enabled' => 'nullable|in:0,1',
             'login_popup_title' => 'nullable|string|max:255',
             'login_popup_message' => 'nullable|string|max:2000',
+            'vtu_enabled' => 'nullable|in:0,1',
+            'vtu_sprintpay_base_url' => 'nullable|url|max:500',
+            'vtu_sprintpay_key' => 'nullable|string|max:255',
+            'vtu_sprintpay_secret' => 'nullable|string|max:1000',
         ]);
 
         SiteSetting::set('site_name', $validated['site_name'] ?? config('app.name', ''));
@@ -140,6 +148,12 @@ class SettingsController extends Controller
         SiteSetting::set('login_popup_enabled', $validated['login_popup_enabled'] ?? '0');
         SiteSetting::set('login_popup_title', $validated['login_popup_title'] ?? '');
         SiteSetting::set('login_popup_message', $validated['login_popup_message'] ?? '');
+        SiteSetting::set('vtu_enabled', $validated['vtu_enabled'] ?? '0');
+        SiteSetting::set('vtu_sprintpay_base_url', $validated['vtu_sprintpay_base_url'] ?? config('services.sprintpay.vtu_base_url'));
+        SiteSetting::set('vtu_sprintpay_key', $validated['vtu_sprintpay_key'] ?? '');
+        if (! empty($validated['vtu_sprintpay_secret'])) {
+            SiteSetting::setEncrypted('vtu_sprintpay_secret', $validated['vtu_sprintpay_secret']);
+        }
 
         return redirect()->route('admin.settings.index')->with('success', 'Settings saved.');
     }

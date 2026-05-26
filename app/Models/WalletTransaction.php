@@ -8,8 +8,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class WalletTransaction extends Model
 {
     public const TYPE_DEPOSIT = 'deposit';
+
     public const TYPE_RENTAL_CHARGE = 'rental_charge';
+
+    public const TYPE_VTU_CHARGE = 'vtu_charge';
+
     public const TYPE_REFUND = 'refund';
+
     public const TYPE_ADMIN_ADJUSTMENT = 'admin_adjustment';
 
     protected $fillable = [

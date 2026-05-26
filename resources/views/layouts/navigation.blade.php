@@ -38,6 +38,9 @@
                     <x-nav-link :href="route('fund-wallet.index')" :active="request()->routeIs('fund-wallet.*')" class="!px-2.5 lg:!px-3 shrink-0 whitespace-nowrap text-xs lg:text-sm">
                         {{ __('Fund Wallet') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('vtu.index')" :active="request()->routeIs('vtu.*')" class="!px-2.5 lg:!px-3 shrink-0 whitespace-nowrap text-xs lg:text-sm">
+                        {{ __('VTU') }}
+                    </x-nav-link>
                     <x-nav-link :href="route('support.index')" :active="request()->routeIs('support.*')" class="!px-2.5 lg:!px-3 shrink-0 whitespace-nowrap text-xs lg:text-sm">
                         {{ __('Support') }}
                     </x-nav-link>
@@ -130,6 +133,7 @@
                 <x-responsive-nav-link :href="route('rentals.create.server2')" :active="request()->routeIs('rentals.create.server2')" title="{{ __('Server 2') }}">SV2</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('rentals.create.server3')" :active="request()->routeIs('rentals.create.server3')" title="{{ __('Server 3') }}">SV3</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('fund-wallet.index')" :active="request()->routeIs('fund-wallet.*')">{{ __('Fund Wallet') }}</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('vtu.index')" :active="request()->routeIs('vtu.*')">{{ __('VTU') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('support.index')" :active="request()->routeIs('support.*')">{{ __('Support') }}</x-responsive-nav-link>
                 @if(auth()->user()?->is_admin)
                 <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.*')">{{ __('Admin') }}</x-responsive-nav-link>

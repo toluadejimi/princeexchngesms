@@ -147,6 +147,31 @@
                     @error('telegram_url')<p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p>@enderror
                 </div>
 
+                <h3 class="text-sm font-medium text-slate-700 dark:text-slate-300 mt-6 mb-3">VTU / bills service</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">SprintPay merchant VAS integration. The secret is encrypted and never shown after saving.</p>
+                <label class="flex items-center gap-2 cursor-pointer mb-3">
+                    <input type="checkbox" name="vtu_enabled" value="1" {{ ($vtu_enabled ?? '0') === '1' ? 'checked' : '' }}>
+                    <span>Enable VTU service for users</span>
+                </label>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">SprintPay API base URL</label>
+                        <input type="url" name="vtu_sprintpay_base_url" value="{{ old('vtu_sprintpay_base_url', $vtu_sprintpay_base_url ?? 'https://web.sprintpay.online/api') }}" class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 shadow-sm" placeholder="https://web.sprintpay.online/api">
+                        @error('vtu_sprintpay_base_url')<p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Webkey / public key</label>
+                        <input type="text" name="vtu_sprintpay_key" value="{{ old('vtu_sprintpay_key', $vtu_sprintpay_key ?? '') }}" class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 shadow-sm" placeholder="SprintPay webkey">
+                        @error('vtu_sprintpay_key')<p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Webhook secret / bearer token</label>
+                        <input type="password" name="vtu_sprintpay_secret" value="" class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 shadow-sm" placeholder="{{ !empty($vtu_secret_set) ? 'Secret saved - leave blank to keep current' : 'Paste SprintPay webhook secret' }}">
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{ !empty($vtu_secret_set) ? 'A secret is currently saved.' : 'No secret saved yet.' }}</p>
+                        @error('vtu_sprintpay_secret')<p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+
                 <h3 class="text-sm font-medium text-slate-700 dark:text-slate-300 mt-6 mb-3">Login popup (promotional)</h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">A popup shown once every time a user logs in. Users can click &quot;Disable&quot; to close it; it will show again after their next login.</p>
                 <label class="flex items-center gap-2 cursor-pointer mb-3">

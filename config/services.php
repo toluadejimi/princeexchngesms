@@ -37,6 +37,9 @@ return [
 
     'sprintpay' => [
         'key' => env('SPRINTPAY_KEY'),  // generate-virtual-account API + payment redirect URL
+        'vtu_base_url' => env('SPRINTPAY_VTU_BASE_URL', 'https://web.sprintpay.online/api'),
+        'vtu_key' => env('SPRINTPAY_VTU_KEY'),
+        'vtu_secret' => env('SPRINTPAY_VTU_SECRET'),
     ],
 
     /** HTTP client limits for US-numbers upstream (getatext); raise if you see cURL error 28 timeouts. */

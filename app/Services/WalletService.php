@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Rental;
 use App\Models\SiteSetting;
 use App\Models\User;
+use App\Models\VtuTransaction;
 use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\DB;
 
@@ -20,7 +21,7 @@ class WalletService
             $user = User::where('id', $user->id)->lockForUpdate()->firstOrFail();
             $balance = (float) $user->wallet_balance;
             if ($balance < $amount) {
-                throw new \RuntimeException('Insufficient wallet balance. Required: ' . SiteSetting::formatWalletAmount($amount));
+                throw new \RuntimeException('Insufficient wallet balance. Required: '.SiteSetting::formatWalletAmount($amount));
             }
             $newBalance = $balance - $amount;
             $user->update(['wallet_balance' => $newBalance]);
@@ -33,6 +34,7 @@ class WalletService
                 'reference_id' => $rental->id,
                 'meta' => ['rental_id' => $rental->id],
             ]);
+
             return true;
         });
     }
@@ -55,6 +57,60 @@ class WalletService
                 'reference_id' => $rental->id,
                 'meta' => ['reason' => $reason, 'rental_id' => $rental->id],
             ]);
+
+            return true;
+        });
+    }
+
+    public function chargeForVtu(User $user, float $amount, VtuTransaction $transaction): bool
+    {
+        return DB::transaction(function () use ($user, $amount, $transaction) {
+            $user = User::where('id', $user->id)->lockForUpdate()->firstOrFail();
+            $balance = (float) $user->wallet_balance;
+            if ($balance < $amount) {
+                throw new \RuntimeException('Insufficient wallet balance. Required: '.SiteSetting::formatWalletAmount($amount));
+            }
+
+            $newBalance = $balance - $amount;
+            $user->update(['wallet_balance' => $newBalance]);
+            WalletTransaction::create([
+                'user_id' => $user->id,
+                'type' => WalletTransaction::TYPE_VTU_CHARGE,
+                'amount' => -$amount,
+                'balance_after' => $newBalance,
+                'reference_type' => 'vtu',
+                'reference_id' => $transaction->id,
+                'meta' => [
+                    'vtu_transaction_id' => $transaction->id,
+                    'reference' => $transaction->reference,
+                    'type' => $transaction->type,
+                ],
+            ]);
+
+            return true;
+        });
+    }
+
+    public function refundForVtu(User $user, float $amount, VtuTransaction $transaction, string $reason = 'failed'): bool
+    {
+        return DB::transaction(function () use ($user, $amount, $transaction, $reason) {
+            $user = User::where('id', $user->id)->lockForUpdate()->firstOrFail();
+            $newBalance = (float) $user->wallet_balance + $amount;
+            $user->update(['wallet_balance' => $newBalance]);
+            WalletTransaction::create([
+                'user_id' => $user->id,
+                'type' => WalletTransaction::TYPE_REFUND,
+                'amount' => $amount,
+                'balance_after' => $newBalance,
+                'reference_type' => 'vtu',
+                'reference_id' => $transaction->id,
+                'meta' => [
+                    'reason' => $reason,
+                    'vtu_transaction_id' => $transaction->id,
+                    'reference' => $transaction->reference,
+                ],
+            ]);
+
             return true;
         });
     }
@@ -80,6 +136,7 @@ class WalletService
                 'reference_id' => null,
                 'meta' => $meta,
             ]);
+
             return true;
         });
     }

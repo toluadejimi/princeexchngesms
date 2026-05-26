@@ -14,6 +14,7 @@ use App\Http\Controllers\FundWalletController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RentalController;
+use App\Http\Controllers\VtuController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -33,6 +34,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/generate-account', [FundWalletController::class, 'generateAccount'])->name('fund-wallet.generate');
     Route::post('/fund-now', [FundWalletController::class, 'fundNow'])->name('fund-wallet.fund-now')->middleware('throttle:30,1');
     Route::post('/fund-manual-submit', [FundWalletController::class, 'fundManualSubmit'])->name('fund-wallet.manual-submit')->middleware('throttle:15,1');
+    Route::get('/vtu', [VtuController::class, 'index'])->name('vtu.index');
+    Route::post('/vtu/purchase', [VtuController::class, 'purchase'])->name('vtu.purchase')->middleware('throttle:20,1');
+    Route::get('/api/vtu/catalog/{catalog}', [VtuController::class, 'catalog'])->name('vtu.catalog')->middleware('throttle:120,1');
 });
 Route::post('/webhook/sprintpay', [FundWalletController::class, 'webhook'])->name('webhook.sprintpay')->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class);
 

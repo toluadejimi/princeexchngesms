@@ -4,15 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 
 class SiteSetting extends Model
 {
     private const CACHE_KEY = 'site_settings_all';
 
     protected $primaryKey = 'key';
+
     public $incrementing = false;
+
     public $timestamps = false;
+
     protected $keyType = 'string';
+
     protected $fillable = ['key', 'value'];
 
     public static function get(string $key, mixed $default = null): mixed
@@ -26,7 +31,32 @@ class SiteSetting extends Model
     {
         static::updateOrCreate(['key' => $key], ['value' => $value === null ? null : (string) $value]);
         Cache::forget(self::CACHE_KEY);
-        Cache::forget('site_setting_' . $key);
+        Cache::forget('site_setting_'.$key);
+    }
+
+    public static function getEncrypted(string $key, mixed $default = null): mixed
+    {
+        $value = static::get($key);
+        if ($value === null || $value === '') {
+            return $default;
+        }
+
+        try {
+            return Crypt::decryptString((string) $value);
+        } catch (\Throwable) {
+            return $default;
+        }
+    }
+
+    public static function setEncrypted(string $key, ?string $value): void
+    {
+        if ($value === null || $value === '') {
+            static::set($key, '');
+
+            return;
+        }
+
+        static::set($key, Crypt::encryptString($value));
     }
 
     private static function allCached(): array
@@ -56,7 +86,8 @@ class SiteSetting extends Model
     public static function logoUrl(): ?string
     {
         $path = static::logoPath();
-        return $path ? asset('storage/' . ltrim($path, '/')) : null;
+
+        return $path ? asset('storage/'.ltrim($path, '/')) : null;
     }
 
     /** Favicon path relative to storage/app/public. Empty if not set. */
@@ -69,7 +100,8 @@ class SiteSetting extends Model
     public static function faviconUrl(): ?string
     {
         $path = static::faviconPath();
-        return $path ? asset('storage/' . ltrim($path, '/')) : null;
+
+        return $path ? asset('storage/'.ltrim($path, '/')) : null;
     }
 
     /** Display currency: USD or NGN (system charges and wallet use this) */
@@ -88,7 +120,8 @@ class SiteSetting extends Model
     public static function formatWalletAmount(float $amount): string
     {
         $decimals = static::displayCurrency() === 'NGN' ? 0 : 2;
-        return static::walletSymbol() . number_format($amount, $decimals);
+
+        return static::walletSymbol().number_format($amount, $decimals);
     }
 
     /** USD to Naira rate (e.g. 1500) */
@@ -143,6 +176,7 @@ class SiteSetting extends Model
         if ($currency === 'NGN' && static::usdToNgnRate() > 0) {
             return ['amount' => static::usdToNairaTotal($usdPrice), 'currency' => 'NGN', 'symbol' => '₦'];
         }
+
         return ['amount' => $usdPrice, 'currency' => 'USD', 'symbol' => '$'];
     }
 
@@ -157,6 +191,7 @@ class SiteSetting extends Model
         }
         $ngn = $usdPrice * $rate + static::nairaMarginAmount();
         $ngn *= (1 + static::nairaMarginPercent() / 100);
+
         return round($ngn, 0);
     }
 
@@ -172,6 +207,7 @@ class SiteSetting extends Model
         if ($rate > 0 && $marginNgn > 0) {
             $usd += $marginNgn / $rate;
         }
+
         return round($usd, 4);
     }
 }

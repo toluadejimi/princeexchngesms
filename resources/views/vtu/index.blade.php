@@ -59,6 +59,7 @@
                 x-data="{
                     type: '{{ old('type', $initialType ?? 'airtime') }}',
                     serviceId: '{{ old('service_id', 'mtn') }}',
+                    submitting: false,
                     serviceOpen: false,
                     serviceSearch: '',
                     loading: false,
@@ -206,7 +207,7 @@
                     </div>
                 </div>
 
-                <form method="POST" action="{{ route('vtu.purchase') }}" class="vtu-form-body space-y-5">
+                <form method="POST" action="{{ route('vtu.purchase') }}" class="vtu-form-body space-y-5" @submit="submitting = true">
                     @csrf
                     <input type="hidden" name="type" :value="type">
 
@@ -349,8 +350,13 @@
                         @error('phone')<p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p>@enderror
                     </div>
 
-                    <button type="submit" @disabled(!($enabled && $configured)) class="w-full min-h-[54px] rounded-2xl bg-gradient-to-r from-mint-500 to-teal-500 hover:from-mint-600 hover:to-teal-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold shadow-lg shadow-mint-500/20 transition active:scale-[0.99]">
-                        Pay securely from wallet
+                    <button type="submit" @disabled(!($enabled && $configured)) :disabled="submitting || {{ ($enabled && $configured) ? 'false' : 'true' }}" class="w-full rounded-2xl bg-gradient-to-r from-mint-500 to-teal-500 hover:from-mint-600 hover:to-teal-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold shadow-lg shadow-mint-500/20 transition active:scale-[0.99]" style="min-height:52px;display:flex;align-items:center;justify-content:center;gap:10px;padding:0 18px;">
+                        <svg x-show="submitting" x-cloak class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                        </svg>
+                        <span x-show="!submitting">Pay securely from wallet</span>
+                        <span x-show="submitting" x-cloak>Processing payment...</span>
                     </button>
                 </form>
             </section>

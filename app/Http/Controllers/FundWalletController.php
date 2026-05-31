@@ -186,7 +186,7 @@ class FundWalletController extends Controller
         $amount = (float) ($payload['amount'] ?? 0);
         $email = $payload['email'] ?? '';
         $orderId = $payload['order_id'] ?? '';
-        $accountNo = (string) ($payload['account_no'] ?? $payload['account_number'] ?? '');
+        $accountNo = (string) ($payload['account_no'] ?? $payload['account_number'] ?? $payload['v_account_no'] ?? '');
 
         if ($amount <= 0 || ! $email) {
             return response()->json(['message' => 'Invalid payload'], 400);
@@ -239,6 +239,11 @@ class FundWalletController extends Controller
                     'order_id' => $orderId,
                     'session_id' => $payload['session_id'] ?? null,
                     'account_no' => $accountNo ?: null,
+                    'provider_amount_settled' => $payload['amount_settled'] ?? null,
+                    'sender_name' => $payload['sender_name'] ?? null,
+                    'sender_account_no' => $payload['sender_account_no'] ?? null,
+                    'sender_bank' => $payload['sender_bank'] ?? null,
+                    'event' => $payload['event'] ?? null,
                     'source' => 'sprintpay',
                     'gross_amount' => $amount,
                     'service_charge' => $serviceCharge,

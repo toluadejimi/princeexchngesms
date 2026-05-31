@@ -57,7 +57,7 @@ class FundWalletController extends Controller
         ]);
 
         $key = config('services.sprintpay.key');
-        if (!$key) {
+        if (! $key) {
             return back()->with('error', 'Virtual account service is not configured.');
         }
 
@@ -67,7 +67,7 @@ class FundWalletController extends Controller
             $key
         );
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return back()->with('error', $result['message'] ?? 'Failed to generate account.');
         }
 
@@ -112,7 +112,7 @@ class FundWalletController extends Controller
 
         FundRequest::where('user_id', $user->id)->where('status', FundRequest::STATUS_PENDING)->delete();
 
-        $ref = 'VERF' . random_int(100, 999) . date('ymdhis');
+        $ref = 'VERF'.random_int(100, 999).date('ymdhis');
 
         $fundRequest = FundRequest::create([
             'user_id' => $user->id,
@@ -124,11 +124,13 @@ class FundWalletController extends Controller
 
         if ($isInstant) {
             $key = config('services.sprintpay.key');
-            if (!$key) {
+            if (! $key) {
                 $fundRequest->update(['status' => FundRequest::STATUS_FAILED]);
+
                 return back()->with('error', 'Payment service is not configured.');
             }
             $url = $this->sprintPay->paymentUrl($amount, $ref, $user->email);
+
             return redirect()->away($url);
         }
 
@@ -162,7 +164,7 @@ class FundWalletController extends Controller
             ->latest()
             ->first();
 
-        if (!$fundRequest) {
+        if (! $fundRequest) {
             return back()->with('error', 'Pending payment not found. Please start again.');
         }
 
@@ -184,13 +186,14 @@ class FundWalletController extends Controller
         $amount = (float) ($payload['amount'] ?? 0);
         $email = $payload['email'] ?? '';
         $orderId = $payload['order_id'] ?? '';
+        $accountNo = (string) ($payload['account_no'] ?? $payload['account_number'] ?? '');
 
-        if ($amount <= 0 || !$email) {
+        if ($amount <= 0 || ! $email) {
             return response()->json(['message' => 'Invalid payload'], 400);
         }
 
         $user = \App\Models\User::where('email', $email)->first();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'User not found'], 404);
         }
 
@@ -205,7 +208,7 @@ class FundWalletController extends Controller
             ->latest()
             ->first();
 
-        if (!$fundRequest) {
+        if (! $fundRequest) {
             $fundRequest = FundRequest::where('user_id', $user->id)
                 ->where('status', FundRequest::STATUS_PENDING)
                 ->where('amount', $amount)
@@ -217,21 +220,33 @@ class FundWalletController extends Controller
             return response()->json(['message' => 'Already processed'], 200);
         }
 
+        $virtualAccount = VirtualAccount::where('user_id', $user->id)->first();
+        $isStaticVirtualAccountFunding = $virtualAccount
+            && $accountNo !== ''
+            && preg_replace('/\D+/', '', $accountNo) === preg_replace('/\D+/', '', (string) $virtualAccount->account_no);
+        $serviceCharge = $isStaticVirtualAccountFunding ? min(100.0, $amount) : 0.0;
+        $creditAmount = max(0.0, $amount - $serviceCharge);
+
         try {
             $this->wallet->adjust(
                 $user,
-                $amount,
+                $creditAmount,
                 \App\Models\WalletTransaction::TYPE_DEPOSIT,
                 [
                     'fund_request_id' => $fundRequest?->id,
                     'order_id' => $orderId,
                     'session_id' => $payload['session_id'] ?? null,
-                    'account_no' => $payload['account_no'] ?? null,
+                    'account_no' => $accountNo ?: null,
                     'source' => 'sprintpay',
+                    'gross_amount' => $amount,
+                    'service_charge' => $serviceCharge,
+                    'net_amount' => $creditAmount,
+                    'static_virtual_account' => $isStaticVirtualAccountFunding,
                 ]
             );
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('SprintPay webhook credit failed', ['error' => $e->getMessage()]);
+
             return response()->json(['message' => 'Credit failed'], 500);
         }
 
@@ -240,7 +255,7 @@ class FundWalletController extends Controller
                 'status' => FundRequest::STATUS_COMPLETED,
                 'order_id' => $orderId,
                 'session_id' => $payload['session_id'] ?? null,
-                'account_no' => $payload['account_no'] ?? null,
+                'account_no' => $accountNo ?: null,
             ]);
         }
 

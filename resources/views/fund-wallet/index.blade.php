@@ -75,7 +75,12 @@
                                 <label class="text-xs text-slate-500 dark:text-slate-400">Bank name</label>
                                 <p class="font-medium">{{ $bank_name }}</p>
                             </div>
-                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">This account can receive payments anytime. Funds are credited automatically.</p>
+                            <div class="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 mt-3">
+                                <p class="text-xs font-medium text-amber-800 dark:text-amber-200">
+                                    ₦100 service charge applies to every transfer made to this virtual account. The remaining amount will be credited to your wallet automatically.
+                                </p>
+                            </div>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">This account can receive payments anytime. Funds are credited automatically after the service charge.</p>
                         </div>
                     @else
                         <form action="{{ route('fund-wallet.generate') }}" method="POST" class="space-y-3">

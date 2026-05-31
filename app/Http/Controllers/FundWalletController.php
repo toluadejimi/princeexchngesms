@@ -221,9 +221,11 @@ class FundWalletController extends Controller
         }
 
         $virtualAccount = VirtualAccount::where('user_id', $user->id)->first();
-        $isStaticVirtualAccountFunding = $virtualAccount
+        $accountMatchesVirtualAccount = $virtualAccount
             && $accountNo !== ''
             && preg_replace('/\D+/', '', $accountNo) === preg_replace('/\D+/', '', (string) $virtualAccount->account_no);
+        $isStaticVirtualAccountFunding = $virtualAccount
+            && ($accountMatchesVirtualAccount || $fundRequest === null);
         $serviceCharge = $isStaticVirtualAccountFunding ? min(100.0, $amount) : 0.0;
         $creditAmount = max(0.0, $amount - $serviceCharge);
 
@@ -242,6 +244,7 @@ class FundWalletController extends Controller
                     'service_charge' => $serviceCharge,
                     'net_amount' => $creditAmount,
                     'static_virtual_account' => $isStaticVirtualAccountFunding,
+                    'account_matches_virtual_account' => $accountMatchesVirtualAccount,
                 ]
             );
         } catch (\Throwable $e) {

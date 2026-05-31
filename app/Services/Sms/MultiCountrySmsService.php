@@ -305,10 +305,15 @@ class MultiCountrySmsService implements SmsServerInterface
             $form['pool'] = $poolId;
         }
         $data = $this->post('/request/price', $form, 'getPrice');
-        $price = (float) ($data['price'] ?? 0);
+        $price = (float) ($data['high_price'] ?? $data['price'] ?? 0);
         $successRate = isset($data['success_rate']) ? (int) $data['success_rate'] : 0;
 
-        return ['price' => $price, 'success_rate' => $successRate];
+        return [
+            'price' => $price,
+            'success_rate' => $successRate,
+            'base_price' => isset($data['price']) ? (float) $data['price'] : 0,
+            'high_price' => isset($data['high_price']) ? (float) $data['high_price'] : $price,
+        ];
     }
 
     public function orderNumber(string $serviceCode, string $countryCode, ?float $maxPrice = null, array $options = []): array
